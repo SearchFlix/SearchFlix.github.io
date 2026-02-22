@@ -3,8 +3,8 @@ name: Multi-Platform Build & Release
 on:
   push:
     tags:
-      - 'v*' # Trigger on version tags (e.g., v1.0.0)
-  workflow_dispatch: # Allow manual trigger
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,24 +15,14 @@ jobs:
         include:
           - platform: android
             os: ubuntu-latest
-            output: build/app/outputs/flutter-apk/app-release.apk
-            artifact_name: SearchFlix-Android.apk
           - platform: web
             os: ubuntu-latest
-            output: build/web
-            artifact_name: SearchFlix-Web
           - platform: macos
             os: macos-latest
-            output: build/macos/Build/Products/Release/searchflix.app
-            artifact_name: SearchFlix-Mac.app
           - platform: windows
             os: windows-latest
-            output: build/windows/x64/runner/Release
-            artifact_name: SearchFlix-Windows
           - platform: linux
             os: ubuntu-latest
-            output: build/linux/x64/release/bundle
-            artifact_name: SearchFlix-Linux
 
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +48,7 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
         
-      - name: Build Global
+      - name: Build Platform Artifacts
         run: |
           if [ "${{ matrix.platform }}" = "android" ]; then
             flutter build apk --release
@@ -66,42 +56,39 @@ jobs:
             flutter build web --release --base-href="/SearchFlix.github.io/"
           elif [ "${{ matrix.platform }}" = "macos" ]; then
             flutter build macos --release
+            # Create DMG
+            mkdir -p dmg_folder
+            cp -r build/macos/Build/Products/Release/searchflix.app dmg_folder/
+            hdiutil create -volname "SearchFlix" -srcfolder dmg_folder -ov -format UDZO SearchFlix-Mac.dmg
           elif [ "${{ matrix.platform }}" = "windows" ]; then
             flutter build windows --release
+            flutter pub run msix:create --version 1.0.0.0 --display-name "SearchFlix" --publisher "CN=SearchFlix"
+            # The msix package usually outputs to build/windows/runner/Release/searchflix.msix
+            # Or similar. We will find it and rename it.
+            mv build/windows/x64/runner/Release/*.msix SearchFlix-Windows-Installer.msix || true
           elif [ "${{ matrix.platform }}" = "linux" ]; then
             flutter build linux --release
+            # Just zip for linux for now
+            zip -r SearchFlix-Linux.zip build/linux/x64/release/bundle/*
           fi
         shell: bash
-
-      - name: ZIP Windows Build
-        if: matrix.platform == 'windows'
-        run: Compress-Archive -Path "${{ matrix.output }}/*" -DestinationPath "SearchFlix-Windows.zip"
-        shell: pwsh
-
-      - name: ZIP Linux Build
-        if: matrix.platform == 'linux'
-        run: zip -r SearchFlix-Linux.zip ${{ matrix.output }}/*
-        
-      - name: ZIP macOS Build
-        if: matrix.platform == 'macos'
-        run: ditto -c -k --sequesterRsrc --keepParent ${{ matrix.output }} SearchFlix-Mac.zip
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            ${{ matrix.platform == 'android' && 'build/app/outputs/flutter-apk/app-release.apk' || '' }}
-            ${{ matrix.platform == 'windows' && 'SearchFlix-Windows.zip' || '' }}
-            ${{ matrix.platform == 'linux' && 'SearchFlix-Linux.zip' || '' }}
-            ${{ matrix.platform == 'macos' && 'SearchFlix-Mac.zip' || '' }}
+            build/app/outputs/flutter-apk/app-release.apk
+            SearchFlix-Mac.dmg
+            SearchFlix-Windows-Installer.msix
+            SearchFlix-Linux.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy-web:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2

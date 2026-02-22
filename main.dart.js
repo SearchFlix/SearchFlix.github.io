@@ -89649,7 +89649,7 @@ A.amh.prototype={
 vV(){var s=0,r=A.M(t.Zz),q,p=this
 var $async$vV=A.H(function(a,b){if(a===1)return A.J(b,r)
 for(;;)switch(s){case 0:s=3
-return A.F(A.ayS(A.eG("https://api.themoviedb.org/3/trending/movie/day?api_key=YOUR_TMDB_API_KEY_HERE")),$async$vV)
+return A.F(A.ayS(A.eG("https://api.themoviedb.org/3/trending/movie/day?api_key=1dc4cbf81f0accf4fa108820d551dafc")),$async$vV)
 case 3:q=p.x9(b)
 s=1
 break
@@ -89658,7 +89658,7 @@ return A.L($async$vV,r)},
 vQ(){var s=0,r=A.M(t.Zz),q,p=this
 var $async$vQ=A.H(function(a,b){if(a===1)return A.J(b,r)
 for(;;)switch(s){case 0:s=3
-return A.F(A.ayS(A.eG("https://api.themoviedb.org/3/movie/popular?api_key=YOUR_TMDB_API_KEY_HERE")),$async$vQ)
+return A.F(A.ayS(A.eG("https://api.themoviedb.org/3/movie/popular?api_key=1dc4cbf81f0accf4fa108820d551dafc")),$async$vQ)
 case 3:q=p.x9(b)
 s=1
 break
@@ -89667,7 +89667,7 @@ return A.L($async$vQ,r)},
 vU(){var s=0,r=A.M(t.Zz),q,p=this
 var $async$vU=A.H(function(a,b){if(a===1)return A.J(b,r)
 for(;;)switch(s){case 0:s=3
-return A.F(A.ayS(A.eG("https://api.themoviedb.org/3/movie/top_rated?api_key=YOUR_TMDB_API_KEY_HERE")),$async$vU)
+return A.F(A.ayS(A.eG("https://api.themoviedb.org/3/movie/top_rated?api_key=1dc4cbf81f0accf4fa108820d551dafc")),$async$vU)
 case 3:q=p.x9(b)
 s=1
 break
@@ -89679,7 +89679,7 @@ var $async$w2=A.H(function(b,c){if(b===1)return A.J(c,r)
 for(;;)switch(s){case 0:if(a.length===0){q=A.c([],t.ZI)
 s=1
 break}s=3
-return A.F(A.ayS(A.eG("https://api.themoviedb.org/3/search/movie?api_key=YOUR_TMDB_API_KEY_HERE&query="+A.Gt(2,a,B.Y,!1))),$async$w2)
+return A.F(A.ayS(A.eG("https://api.themoviedb.org/3/search/movie?api_key=1dc4cbf81f0accf4fa108820d551dafc&query="+A.Gt(2,a,B.Y,!1))),$async$w2)
 case 3:q=p.x9(c)
 s=1
 break

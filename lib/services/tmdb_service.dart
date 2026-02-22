@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/movie.dart';
 
 class TMDBService {
-  static const String _apiKey = 'YOUR_TMDB_API_KEY_HERE'; // User should replace this
+  static const String _apiKey = '1dc4cbf81f0accf4fa108820d551dafc'; // Actual TMDB API Key
   static const String _baseUrl = 'https://api.themoviedb.org/3';
 
   Future<List<Movie>> getTrendingMovies() async {

@@ -1,27 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'colors.dart';
 
 class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
-      primaryColor: AppColors.primary,
-      colorScheme: ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
-        surface: AppColors.surface,
+      fontFamily: 'Vazirmatn', // Universal font for project
+      scaffoldBackgroundColor: const Color(0xFF0F0F0F),
+      primaryColor: const Color(0xFFE50914),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFFE50914),
+        secondary: Color(0xFF007AFF),
+        surface: Color(0xFF1A1A1A),
       ),
-      textTheme: GoogleFonts.outfitTextTheme(
-        const TextTheme(
-          displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textMain),
-          bodyLarge: TextStyle(fontSize: 16, color: AppColors.textMain),
-          bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-        ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+        bodyLarge: TextStyle(fontSize: 16, color: Colors.white),
+        bodyMedium: TextStyle(fontSize: 14, color: Colors.white70),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: const Color(0xFF1A1A1A),
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),

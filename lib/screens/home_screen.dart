@@ -1,11 +1,9 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../services/localization_service.dart';
 import '../widgets/movie_card.dart';
-import '../widgets/glass_box.dart';
-import '../widgets/filter_sheet.dart';
+import '../widgets/filter_panel.dart';
 import 'details_screen.dart';
 import 'watchlist_screen.dart';
 
@@ -23,47 +21,44 @@ class _HomeScreenState extends State<HomeScreen> {
   
   List<Movie> _movies = [];
   List<Movie> _searchResults = [];
-  List<int> _selectedMovieIds = [];
   bool _isLoading = true;
   bool _isSearching = false;
-  bool _selectionMode = false;
-  String _currentCategory = 'trending';
-  Map<String, dynamic> _filters = {'genreId': null, 'minRating': 0.0, 'year': null, 'actors': []};
+  
+  Map<String, dynamic> _filters = {
+    'genreId': null, 
+    'minRating': 0.0, 
+    'year': null, 
+    'actors': [], 
+    'sortBy': 'popularity.desc', 
+    'language': 'all'
+  };
 
   @override
   void initState() {
     super.initState();
-    _fetchMovies(_currentCategory);
+    _applyFilters();
   }
 
-  Future<void> _fetchMovies(String category) async {
+  Future<void> _applyFilters() async {
     setState(() {
       _isLoading = true;
-      _currentCategory = category;
       _isSearching = false;
     });
     try {
-      List<Movie> movies;
-      if (category == 'trending') {
-        movies = await _tmdbService.getTrendingMovies();
-      } else if (category == 'popular') {
-        movies = await _tmdbService.getPopularMovies();
-      } else if (category == 'top_rated') {
-        movies = await _tmdbService.getTopRatedMovies();
-      } else {
-        // Advanced discovery with ALL filters including Actors
-        String? castIds;
-        if ((_filters['actors'] as List).isNotEmpty) {
-          castIds = (_filters['actors'] as List).map((a) => a['id'].toString()).join(',');
-        }
-        
-        movies = await _tmdbService.discoverMovies(
-          genreId: _filters['genreId'],
-          minRating: _filters['minRating'],
-          year: _filters['year'],
-          castIds: castIds,
-        );
+      String? castIds;
+      if ((_filters['actors'] as List).isNotEmpty) {
+        castIds = (_filters['actors'] as List).map((a) => a['id'].toString()).join(',');
       }
+      
+      final movies = await _tmdbService.discoverMovies(
+        genreId: _filters['genreId'],
+        minRating: (_filters['minRating'] as num).toDouble(),
+        year: _filters['year'],
+        castIds: castIds,
+        sortBy: _filters['sortBy'],
+        language: _filters['language'],
+      );
+      
       if (mounted) {
         setState(() {
           _movies = movies;
@@ -77,290 +72,130 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handleSearch(String query) async {
     if (query.isEmpty) {
-      setState(() {
-        _isSearching = false;
-        _searchResults = [];
-      });
+      setState(() => _isSearching = false);
       return;
     }
-
     setState(() => _isSearching = true);
     try {
       final results = await _tmdbService.searchMovies(query);
-      if (mounted) {
-        setState(() {
-          _searchResults = results;
-        });
-      }
+      if (mounted) setState(() => _searchResults = results);
     } catch (e) {}
-  }
-
-  Future<void> _findSimilarBasedOnSelection() async {
-    setState(() => _isLoading = true);
-    try {
-      final similar = await _tmdbService.getSimilarMovies(_selectedMovieIds);
-      setState(() {
-        _movies = similar;
-        _isLoading = false;
-        _selectionMode = false;
-        _selectedMovieIds = [];
-        _currentCategory = 'discovery';
-      });
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _toggleSelection(int id) {
-    setState(() {
-      if (_selectedMovieIds.contains(id)) {
-        _selectedMovieIds.remove(id);
-        if (_selectedMovieIds.isEmpty) _selectionMode = false;
-      } else {
-        _selectedMovieIds.add(id);
-      }
-    });
-  }
-
-  void _showFilters() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => FilterSheet(
-        currentFilters: _filters,
-        onApply: (newFilters) {
-          setState(() => _filters = newFilters);
-          _fetchMovies('discovery');
-        },
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = Lang.of(context);
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
-    final double screenWidth = MediaQuery.of(context).size.width;
-    
-    int crossAxisCount;
-    double padding;
-    double spacing;
-    
-    if (screenWidth > 1400) {
-      crossAxisCount = 7;
-      padding = 60;
-      spacing = 30;
-    } else if (screenWidth > 1100) {
-      crossAxisCount = 5;
-      padding = 40;
-      spacing = 25;
-    } else if (screenWidth > 800) {
-      crossAxisCount = 4;
-      padding = 30;
-      spacing = 20;
-    } else if (screenWidth > 600) {
-      crossAxisCount = 3;
-      padding = 20;
-      spacing = 15;
-    } else {
-      crossAxisCount = 2;
-      padding = 16;
-      spacing = 12;
-    }
+    final width = MediaQuery.of(context).size.width;
+    final bool isWide = width > 900;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: const Color(0xFF0F0F0F),
-      body: Stack(
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SafeArea(
+          // PC SIDEBAR FILTER
+          if (isWide)
+            SizedBox(
+              width: 320,
+              height: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 20, top: 20, bottom: 20),
+                child: FilterPanel(
+                  filters: _filters,
+                  onFilterChanged: (f) => setState(() => _filters = f),
+                  onApply: _applyFilters,
+                ),
+              ),
+            ),
+
+          // MAIN CONTENT
+          Expanded(
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverAppBar(
                   floating: true,
-                  expandedHeight: 180,
                   backgroundColor: Colors.transparent,
                   elevation: 0,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 10),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ShaderMask(
-                                shaderCallback: (bounds) => const LinearGradient(
-                                  colors: [Color(0xFFE50914), Color(0xFFFF5252)],
-                                ).createShader(bounds),
-                                child: Text(
-                                  'SEARCHFLIX',
-                                  style: TextStyle(
-                                    fontSize: screenWidth > 600 ? 32 : 24, 
-                                    fontWeight: FontWeight.w900, 
-                                    letterSpacing: 2.0, 
-                                    color: Colors.white
-                                  ),
-                                ),
-                              ),
-                              if (_selectionMode)
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE50914), 
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                ),
-                                onPressed: _findSimilarBasedOnSelection,
-                                icon: const Icon(Icons.compare_arrows, size: 18),
-                                label: Text('Find Similar (${_selectedMovieIds.length})'),
-                              )
-                              else
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.filter_list, color: Colors.white70), 
-                                    onPressed: _showFilters,
-                                    tooltip: 'Advanced Filters',
-                                  ),
-                                  PopupMenuButton<String>(
-                                    offset: const Offset(0, 50),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                    icon: const Icon(Icons.language, color: Colors.white70),
-                                    onSelected: (v) => widget.onLocaleChange(Locale(v)),
-                                    itemBuilder: (c) => [
-                                      const PopupMenuItem(value: 'fa', child: Text('فارسی')),
-                                      const PopupMenuItem(value: 'en', child: Text('English')),
-                                      const PopupMenuItem(value: 'ar', child: Text('العربية')),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 15),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 800),
-                            child: GlassBox(
-                              borderRadius: 30,
-                              opacity: 0.1,
-                              child: TextField(
-                                controller: _searchController,
-                                onChanged: _handleSearch,
-                                textAlign: isRtl ? TextAlign.right : TextAlign.left,
-                                style: const TextStyle(fontSize: 16),
-                                decoration: InputDecoration(
-                                  hintText: lang.searchHint,
-                                  prefixIcon: const Icon(Icons.search, color: Color(0xFFE50914)),
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                  automaticallyImplyLeading: false,
+                  title: Row(
+                    children: [
+                      const Text('SEARCHFLIX', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, color: Color(0xFFE50914))),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.favorite_rounded, color: Colors.white70),
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const WatchlistScreen())),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.language, color: Colors.white70),
+                        onPressed: () {
+                           // Quick toggle example
+                           widget.onLocaleChange(lang.currentLocale == 'fa' ? const Locale('en') : const Locale('fa'));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Mobile Filter Section
+                if (!isWide)
+                  SliverToBoxAdapter(
+                    child: ExpansionTile(
+                      title: const Text('SEARCH FILTERS', style: TextStyle(color: Color(0xFFE50914), fontWeight: FontWeight.bold, fontSize: 13)),
+                      initiallyExpanded: false,
+                      children: [
+                        FilterPanel(
+                          filters: _filters,
+                          onFilterChanged: (f) => setState(() => _filters = f),
+                          onApply: _applyFilters,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                SliverPadding(
+                  padding: const EdgeInsets.all(20),
+                  sliver: SliverToBoxAdapter(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _handleSearch,
+                      decoration: InputDecoration(
+                        hintText: 'Direct search by title...',
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFFE50914)),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.05),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                       ),
                     ),
                   ),
                 ),
 
                 SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: padding),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: _isLoading
                       ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
                       : SliverGrid(
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
+                            crossAxisCount: isWide ? (width > 1400 ? 5 : 4) : 2,
                             childAspectRatio: 0.68,
-                            mainAxisSpacing: spacing + 10,
-                            crossAxisSpacing: spacing,
+                            mainAxisSpacing: 20,
+                            crossAxisSpacing: 20,
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
                               final movie = _isSearching ? _searchResults[index] : _movies[index];
                               return MovieCard(
                                 movie: movie,
-                                selectionMode: _selectionMode,
-                                isSelected: _selectedMovieIds.contains(movie.id),
-                                onLongPress: () {
-                                   setState(() {
-                                     _selectionMode = true;
-                                     _selectedMovieIds.add(movie.id);
-                                   });
-                                },
-                                onTap: () {
-                                  if (_selectionMode) {
-                                    _toggleSelection(movie.id);
-                                  } else {
-                                    Navigator.push(
-                                      context, 
-                                      PageRouteBuilder(
-                                        pageBuilder: (c, a, s) => DetailsScreen(movie: movie),
-                                        transitionDuration: const Duration(milliseconds: 300),
-                                      ),
-                                    ).then((_) {
-                                      // Force refresh logic or meta update if needed
-                                    });
-                                  }
-                                },
+                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => DetailsScreen(movie: movie))),
                               );
                             },
                             childCount: _isSearching ? _searchResults.length : _movies.length,
                           ),
                         ),
                 ),
-                const SliverToBoxAdapter(child: SizedBox(height: 120)),
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
               ],
             ),
           ),
-          
-          if (!_selectionMode)
-          Positioned(
-            bottom: 25,
-            left: screenWidth > 600 ? (screenWidth - 500) / 2 : 20,
-            right: screenWidth > 600 ? (screenWidth - 500) / 2 : 20,
-            child: GlassBox(
-              borderRadius: 35,
-              opacity: 0.2,
-              blur: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _NavItem(icon: Icons.home_rounded, label: lang.trending, isActive: _currentCategory != 'watchlist', onTap: () => _fetchMovies('trending')),
-                    _NavItem(icon: Icons.favorite_rounded, label: lang.watchlist, isActive: false, onTap: () {
-                       Navigator.push(context, MaterialPageRoute(builder: (c) => const WatchlistScreen()));
-                    }),
-                    _NavItem(icon: Icons.person_rounded, label: lang.login, onTap: () {}),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-  const _NavItem({required this.icon, required this.label, this.isActive = false, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: isActive ? const Color(0xFFE50914) : Colors.white54, size: 28),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 10, color: isActive ? const Color(0xFFE50914) : Colors.white54)),
         ],
       ),
     );

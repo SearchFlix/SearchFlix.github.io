@@ -42,12 +42,14 @@ class TMDBService {
     double? minRating,
     String? castIds,
     String? sortBy = 'popularity.desc',
+    String? language,
   }) async {
     String url = '${ApiConfig.tmdbBaseUrl}/discover/movie?api_key=${ApiConfig.tmdbApiKey}&sort_by=$sortBy';
     if (year != null) url += '&primary_release_year=$year';
     if (genreId != null) url += '&with_genres=$genreId';
     if (minRating != null) url += '&vote_average.gte=$minRating';
     if (castIds != null && castIds.isNotEmpty) url += '&with_cast=$castIds';
+    if (language != null && language != 'all') url += '&with_original_language=$language';
 
     final response = await http.get(Uri.parse(url));
     return _handleResponse(response);
@@ -92,7 +94,7 @@ class TMDBService {
       final List results = data['results'];
       return results.map((m) => Movie.fromJson(m)).toList();
     } else {
-      throw Exception('Failed to load data from TMDB');
+      throw Exception('Failed to load data');
     }
   }
 }

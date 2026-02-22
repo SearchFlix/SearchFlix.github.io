@@ -99,4 +99,6 @@ class Lang {
     Locale locale = Localizations.localeOf(context);
     return _translations[locale.languageCode] ?? _translations['en']!;
   }
+
+  String get currentLocale => 'en'; // Placeholder
 }

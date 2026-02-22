@@ -1,10 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../services/localization_service.dart';
-import '../services/watchlist_provider.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/glass_box.dart';
 import '../widgets/filter_sheet.dart';
@@ -30,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSearching = false;
   bool _selectionMode = false;
   String _currentCategory = 'trending';
-  Map<String, dynamic> _filters = {'genreId': null, 'minRating': 0.0, 'year': null};
+  Map<String, dynamic> _filters = {'genreId': null, 'minRating': 0.0, 'year': null, 'actors': []};
 
   @override
   void initState() {
@@ -53,10 +51,17 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (category == 'top_rated') {
         movies = await _tmdbService.getTopRatedMovies();
       } else {
+        // Advanced discovery with ALL filters including Actors
+        String? castIds;
+        if ((_filters['actors'] as List).isNotEmpty) {
+          castIds = (_filters['actors'] as List).map((a) => a['id'].toString()).join(',');
+        }
+        
         movies = await _tmdbService.discoverMovies(
           genreId: _filters['genreId'],
           minRating: _filters['minRating'],
           year: _filters['year'],
+          castIds: castIds,
         );
       }
       if (mounted) {
@@ -136,11 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final lang = Lang.of(context);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
-    
-    // UI Layout Configuration based on width
     final double screenWidth = MediaQuery.of(context).size.width;
     
-    // PRO-GRADE RESPONSIVE LOGIC
     int crossAxisCount;
     double padding;
     double spacing;
@@ -208,7 +210,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFE50914), 
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)
                                 ),
                                 onPressed: _findSimilarBasedOnSelection,
                                 icon: const Icon(Icons.compare_arrows, size: 18),
@@ -220,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.filter_list, color: Colors.white70), 
                                     onPressed: _showFilters,
-                                    tooltip: 'Filters',
+                                    tooltip: 'Advanced Filters',
                                   ),
                                   PopupMenuButton<String>(
                                     offset: const Offset(0, 50),
@@ -239,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 15),
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 800), // Limit search bar width on large screens
+                            constraints: const BoxConstraints(maxWidth: 800),
                             child: GlassBox(
                               borderRadius: 30,
                               opacity: 0.1,
@@ -294,10 +295,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Navigator.push(
                                       context, 
                                       PageRouteBuilder(
-                                        pageBuilder: (c, a, s) => FadeTransition(opacity: a, child: DetailsScreen(movie: movie)),
+                                        pageBuilder: (c, a, s) => DetailsScreen(movie: movie),
                                         transitionDuration: const Duration(milliseconds: 300),
                                       ),
-                                    );
+                                    ).then((_) {
+                                      // Force refresh logic or meta update if needed
+                                    });
                                   }
                                 },
                               );
@@ -336,29 +339,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-  const _CategoryChip({required this.label, required this.isActive, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFE50914) : Colors.white10,
-          borderRadius: BorderRadius.circular(25),
-        ),
-        child: Text(label, style: TextStyle(color: isActive ? Colors.white : Colors.white70, fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
       ),
     );
   }

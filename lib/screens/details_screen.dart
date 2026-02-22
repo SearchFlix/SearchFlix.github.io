@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:html' as html;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../services/localization_service.dart';
@@ -26,6 +28,15 @@ class _DetailsScreenState extends State<DetailsScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _updateWebMeta();
+  }
+
+  void _updateWebMeta() {
+    if (kIsWeb) {
+      html.document.title = "SearchFlix | ${widget.movie.title}";
+      // Update URL without reloading for better SEO feel
+      html.window.history.pushState(null, widget.movie.title, "#/movie/${widget.movie.id}");
+    }
   }
 
   Future<void> _loadData() async {
@@ -62,13 +73,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final lang = Lang.of(context);
     final watchlistProvider = Provider.of<WatchlistProvider>(context);
     final isFavorite = watchlistProvider.isInWatchlist(widget.movie.id);
+    final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F0F),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 450,
+            expandedHeight: width > 900 ? 500 : 400,
             pinned: true,
             backgroundColor: const Color(0xFF0F0F0F),
             flexibleSpace: FlexibleSpaceBar(
@@ -102,13 +114,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                   // Movie Schema/Meta Content
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           widget.movie.title,
-                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 1.2),
+                          style: TextStyle(
+                            fontSize: width > 600 ? 40 : 28, 
+                            fontWeight: FontWeight.w900, 
+                            letterSpacing: 1.2
+                          ),
                         ),
                       ),
                       IconButton(
@@ -122,23 +139,30 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     ],
                   ),
                   const SizedBox(height: 15),
-                  Row(
+                  Wrap(
+                    spacing: 15,
+                    runSpacing: 10,
                     children: [
                       _Badge(label: widget.movie.voteAverage.toStringAsFixed(1), icon: Icons.star, color: Colors.amber),
-                      const SizedBox(width: 15),
                       _Badge(label: widget.movie.releaseDate.split('-')[0], icon: Icons.calendar_today, color: Colors.white60),
+                      if (_details != null)
+                        ...(_details!['genres'] as List).take(3).map((g) => _Badge(label: g['name'], icon: Icons.movie_filter, color: Colors.white30)),
                     ],
                   ),
                   const SizedBox(height: 25),
                   Text(
                     widget.movie.overview,
-                    style: TextStyle(fontSize: 16, height: 1.6, color: Colors.white.withOpacity(0.9)),
+                    style: TextStyle(
+                      fontSize: width > 600 ? 18 : 16, 
+                      height: 1.6, 
+                      color: Colors.white.withOpacity(0.9)
+                    ),
                   ),
                   const SizedBox(height: 30),
                   
                   if (_details != null && _details!['videos']['results'].isNotEmpty)
                   SizedBox(
-                    width: double.infinity,
+                    width: width > 600 ? 300 : double.infinity,
                     height: 55,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
@@ -155,12 +179,12 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   const Text('Top Cast', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 15),
                   SizedBox(
-                    height: 150,
+                    height: 160,
                     child: _isLoading 
                       ? const Center(child: CircularProgressIndicator())
                       : ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: (_details?['credits']['cast'] as List).take(10).length,
+                          itemCount: (_details?['credits']['cast'] as List).take(12).length,
                           itemBuilder: (context, index) {
                             final actor = _details?['credits']['cast'][index];
                             return _ActorCard(
@@ -185,11 +209,11 @@ class _DetailsScreenState extends State<DetailsScreen> {
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 0.6,
-                mainAxisSpacing: 15,
-                crossAxisSpacing: 15,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: width > 1200 ? 6 : (width > 800 ? 4 : 3),
+                childAspectRatio: 0.65,
+                mainAxisSpacing: 20,
+                crossAxisSpacing: 20,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) => MovieCard(
@@ -197,7 +221,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (c) => DetailsScreen(movie: _similarMovies[index])),
+                      PageRouteBuilder(
+                        pageBuilder: (c, a, s) => DetailsScreen(movie: _similarMovies[index]),
+                        transitionDuration: Duration.zero,
+                      ),
                     );
                   },
                 ),
@@ -205,7 +232,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 50)),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
     );
@@ -228,10 +255,11 @@ class _Badge extends StatelessWidget {
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
         ],
       ),
     );
@@ -247,16 +275,16 @@ class _ActorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 100,
+      width: 110,
       margin: const EdgeInsets.only(right: 15),
       child: Column(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(50),
+            borderRadius: BorderRadius.circular(55),
             child: CachedNetworkImage(
               imageUrl: imageUrl,
-              height: 80,
-              width: 80,
+              height: 90,
+              width: 90,
               fit: BoxFit.cover,
             ),
           ),

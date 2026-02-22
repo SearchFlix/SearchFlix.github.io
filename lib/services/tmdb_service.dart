@@ -40,21 +40,30 @@ class TMDBService {
     int? year,
     String? genreId,
     double? minRating,
+    String? castIds,
     String? sortBy = 'popularity.desc',
   }) async {
     String url = '${ApiConfig.tmdbBaseUrl}/discover/movie?api_key=${ApiConfig.tmdbApiKey}&sort_by=$sortBy';
     if (year != null) url += '&primary_release_year=$year';
     if (genreId != null) url += '&with_genres=$genreId';
     if (minRating != null) url += '&vote_average.gte=$minRating';
+    if (castIds != null && castIds.isNotEmpty) url += '&with_cast=$castIds';
 
     final response = await http.get(Uri.parse(url));
     return _handleResponse(response);
   }
 
+  Future<List<Map<String, dynamic>>> searchActors(String query) async {
+    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/search/person?api_key=${ApiConfig.tmdbApiKey}&query=${Uri.encodeComponent(query)}'));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return List<Map<String, dynamic>>.from(data['results']);
+    }
+    return [];
+  }
+
   Future<List<Movie>> getSimilarMovies(List<int> movieIds) async {
     if (movieIds.isEmpty) return [];
-    
-    // We fetch recommendations for the first 3 selected movies to get a good mix
     List<Movie> combinedResults = [];
     for (var id in movieIds.take(3)) {
       final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/$id/recommendations?api_key=${ApiConfig.tmdbApiKey}'));
@@ -64,8 +73,6 @@ class TMDBService {
         combinedResults.addAll(results.map((m) => Movie.fromJson(m)).toList());
       }
     }
-    
-    // De-duplicate results
     final seen = <int>{};
     return combinedResults.where((m) => seen.add(m.id)).toList();
   }

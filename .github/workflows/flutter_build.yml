@@ -1,14 +1,107 @@
-name: Multi-Platform Build
+name: Multi-Platform Build & Release
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    tags:
+      - 'v*' # Trigger on version tags (e.g., v1.0.0)
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
-  build-web:
+  build:
+    name: Build for ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - platform: android
+            os: ubuntu-latest
+            output: build/app/outputs/flutter-apk/app-release.apk
+            artifact_name: SearchFlix-Android.apk
+          - platform: web
+            os: ubuntu-latest
+            output: build/web
+            artifact_name: SearchFlix-Web
+          - platform: macos
+            os: macos-latest
+            output: build/macos/Build/Products/Release/searchflix.app
+            artifact_name: SearchFlix-Mac.app
+          - platform: windows
+            os: windows-latest
+            output: build/windows/x64/runner/Release
+            artifact_name: SearchFlix-Windows
+          - platform: linux
+            os: ubuntu-latest
+            output: build/linux/x64/release/bundle
+            artifact_name: SearchFlix-Linux
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Linux Dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev
+          
+      - name: Setup Java
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Install Dependencies
+        run: flutter pub get
+        
+      - name: Build Global
+        run: |
+          if [ "${{ matrix.platform }}" = "android" ]; then
+            flutter build apk --release
+          elif [ "${{ matrix.platform }}" = "web" ]; then
+            flutter build web --release --base-href="/SearchFlix.github.io/"
+          elif [ "${{ matrix.platform }}" = "macos" ]; then
+            flutter build macos --release
+          elif [ "${{ matrix.platform }}" = "windows" ]; then
+            flutter build windows --release
+          elif [ "${{ matrix.platform }}" = "linux" ]; then
+            flutter build linux --release
+          fi
+        shell: bash
+
+      - name: ZIP Windows Build
+        if: matrix.platform == 'windows'
+        run: Compress-Archive -Path "${{ matrix.output }}/*" -DestinationPath "SearchFlix-Windows.zip"
+        shell: pwsh
+
+      - name: ZIP Linux Build
+        if: matrix.platform == 'linux'
+        run: zip -r SearchFlix-Linux.zip ${{ matrix.output }}/*
+        
+      - name: ZIP macOS Build
+        if: matrix.platform == 'macos'
+        run: ditto -c -k --sequesterRsrc --keepParent ${{ matrix.output }} SearchFlix-Mac.zip
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{ matrix.platform == 'android' && 'build/app/outputs/flutter-apk/app-release.apk' || '' }}
+            ${{ matrix.platform == 'windows' && 'SearchFlix-Windows.zip' || '' }}
+            ${{ matrix.platform == 'linux' && 'SearchFlix-Linux.zip' || '' }}
+            ${{ matrix.platform == 'macos' && 'SearchFlix-Mac.zip' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-web:
+    needs: build
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -21,71 +114,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
-
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-      - run: flutter pub get
-      - run: flutter build apk --release
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-      - run: flutter pub get
-      - run: flutter build windows --release
-      - name: Upload Windows Build
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build
-          path: build/windows/x64/runner/Release/
-
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-      - run: flutter pub get
-      - run: flutter build linux --release
-      - name: Upload Linux Build
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build
-          path: build/linux/x64/release/bundle/
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-      - run: flutter pub get
-      - run: flutter build macos --release
-      - name: Upload macOS Build
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-build
-          path: build/macos/Build/Products/Release/

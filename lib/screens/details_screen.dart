@@ -1,39 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/movie.dart';
+import '../services/tmdb_service.dart';
 import '../services/localization_service.dart';
 import '../services/watchlist_provider.dart';
-import '../widgets/glass_box.dart';
+import '../widgets/movie_card.dart';
 
-class DetailsScreen extends StatelessWidget {
+class DetailsScreen extends StatefulWidget {
   final Movie movie;
   const DetailsScreen({super.key, required this.movie});
+
+  @override
+  State<DetailsScreen> createState() => _DetailsScreenState();
+}
+
+class _DetailsScreenState extends State<DetailsScreen> {
+  final TMDBService _service = TMDBService();
+  Map<String, dynamic>? _details;
+  List<Movie> _similarMovies = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final details = await _service.getMovieDetails(widget.movie.id);
+      final similar = await _service.getSimilarMovies([widget.movie.id]);
+      if (mounted) {
+        setState(() {
+          _details = details;
+          _similarMovies = similar;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _launchTrailer() async {
+    if (_details != null && _details!['videos']['results'].isNotEmpty) {
+      final trailer = _details!['videos']['results'].firstWhere(
+        (v) => v['type'] == 'Trailer' && v['site'] == 'YouTube',
+        orElse: () => _details!['videos']['results'].first,
+      );
+      final url = Uri.parse('https://www.youtube.com/watch?v=${trailer['key']}');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final lang = Lang.of(context);
     final watchlistProvider = Provider.of<WatchlistProvider>(context);
-    final isFavorite = watchlistProvider.isInWatchlist(movie.id);
+    final isFavorite = watchlistProvider.isInWatchlist(widget.movie.id);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 400,
+            expandedHeight: 450,
             pinned: true,
             backgroundColor: const Color(0xFF0F0F0F),
             flexibleSpace: FlexibleSpaceBar(
-              background: CachedNetworkImage(
-                imageUrl: (movie.backdropPath != '') ? movie.backdropUrl : movie.posterUrl,
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) => const Icon(Icons.error),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: (widget.movie.backdropPath != '') ? widget.movie.backdropUrl : widget.movie.posterUrl,
+                    fit: BoxFit.cover,
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          const Color(0xFF0F0F0F).withOpacity(0.8),
+                          const Color(0xFF0F0F0F),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -42,73 +107,162 @@ class DetailsScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          movie.title,
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                          widget.movie.title,
+                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 1.2),
                         ),
                       ),
                       IconButton(
                         icon: Icon(
                           isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorite ? const Color(0xFFE50914) : Colors.white,
-                          size: 30,
+                          color: isFavorite ? const Color(0xFFE50914) : Colors.white70,
+                          size: 32,
                         ),
-                        onPressed: () => watchlistProvider.toggleWatchlist(movie),
+                        onPressed: () => watchlistProvider.toggleWatchlist(widget.movie),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 20),
-                      const SizedBox(width: 5),
-                      Text(
-                        movie.voteAverage.toStringAsFixed(1),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 15),
-                      Text(
-                        "${lang.releaseDate}: ${movie.releaseDate}",
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    movie.overview,
-                    style: const TextStyle(fontSize: 16, height: 1.5),
-                  ),
-                  const SizedBox(height: 30),
-                  Text(
-                    lang.movieDetails,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
-                  // Extra details placeholder
-                  _DetailRow(label: lang.rating, value: movie.voteAverage.toString()),
-                  _DetailRow(label: lang.releaseDate, value: movie.releaseDate),
+                  Row(
+                    children: [
+                      _Badge(label: widget.movie.voteAverage.toStringAsFixed(1), icon: Icons.star, color: Colors.amber),
+                      const SizedBox(width: 15),
+                      _Badge(label: widget.movie.releaseDate.split('-')[0], icon: Icons.calendar_today, color: Colors.white60),
+                    ],
+                  ),
+                  const SizedBox(height: 25),
+                  Text(
+                    widget.movie.overview,
+                    style: TextStyle(fontSize: 16, height: 1.6, color: Colors.white.withOpacity(0.9)),
+                  ),
+                  const SizedBox(height: 30),
+                  
+                  if (_details != null && _details!['videos']['results'].isNotEmpty)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE50914),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                      onPressed: _launchTrailer,
+                      icon: const Icon(Icons.play_arrow, color: Colors.white),
+                      label: const Text('WATCH TRAILER', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white)),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  const Text('Top Cast', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 15),
+                  SizedBox(
+                    height: 150,
+                    child: _isLoading 
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: (_details?['credits']['cast'] as List).take(10).length,
+                          itemBuilder: (context, index) {
+                            final actor = _details?['credits']['cast'][index];
+                            return _ActorCard(
+                              name: actor['name'],
+                              character: actor['character'],
+                              imageUrl: actor['profile_path'] != null 
+                                ? 'https://image.tmdb.org/t/p/w200${actor['profile_path']}' 
+                                : 'https://via.placeholder.com/200x300?text=No+Photo',
+                            );
+                          },
+                        ),
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  const Text('More Like This', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
+          
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 0.6,
+                mainAxisSpacing: 15,
+                crossAxisSpacing: 15,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => MovieCard(
+                  movie: _similarMovies[index],
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (c) => DetailsScreen(movie: _similarMovies[index])),
+                    );
+                  },
+                ),
+                childCount: _similarMovies.length,
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 50)),
         ],
       ),
     );
   }
 }
 
-class _DetailRow extends StatelessWidget {
+class _Badge extends StatelessWidget {
   final String label;
-  final String value;
-  const _DetailRow({required this.label, required this.value});
+  final IconData icon;
+  final Color color;
+  const _Badge({required this.label, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
       child: Row(
         children: [
-          Text("$label: ", style: const TextStyle(color: Colors.white70)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActorCard extends StatelessWidget {
+  final String name;
+  final String character;
+  final String imageUrl;
+  const _ActorCard({required this.name, required this.character, required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 15),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(50),
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              height: 80,
+              width: 80,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          Text(character, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.white54)),
         ],
       ),
     );

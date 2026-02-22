@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
+import 'services/watchlist_provider.dart';
 
 void main() {
-  runApp(const SearchFlixApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => WatchlistProvider()),
+      ],
+      child: const SearchFlixApp(),
+    ),
+  );
 }
 
 class SearchFlixApp extends StatefulWidget {
@@ -15,7 +24,7 @@ class SearchFlixApp extends StatefulWidget {
 }
 
 class _SearchFlixAppState extends State<SearchFlixApp> {
-  Locale _locale = const Locale('fa'); // Default to Persian as requested
+  Locale _locale = const Locale('fa');
 
   void setLocale(Locale value) {
     setState(() {

@@ -1,9 +1,12 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../services/localization_service.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/glass_box.dart';
+import 'details_screen.dart';
+import 'watchlist_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(Locale) onLocaleChange;
@@ -17,31 +20,38 @@ class _HomeScreenState extends State<HomeScreen> {
   final TMDBService _tmdbService = TMDBService();
   final TextEditingController _searchController = TextEditingController();
   
-  List<Movie> _trendingMovies = [];
+  List<Movie> _movies = [];
   List<Movie> _searchResults = [];
   bool _isLoading = true;
   bool _isSearching = false;
+  String _currentCategory = 'trending';
 
   @override
   void initState() {
     super.initState();
-    _fetchTrending();
+    _fetchMovies('trending');
   }
 
-  Future<void> _fetchTrending() async {
+  Future<void> _fetchMovies(String category) async {
+    setState(() {
+      _isLoading = true;
+      _currentCategory = category;
+    });
     try {
-      final movies = await _tmdbService.getTrendingMovies();
+      List<Movie> movies;
+      if (category == 'trending') {
+        movies = await _tmdbService.getTrendingMovies();
+      } else if (category == 'popular') {
+        movies = await _tmdbService.getPopularMovies();
+      } else {
+        movies = await _tmdbService.getTopRatedMovies();
+      }
       setState(() {
-        _trendingMovies = movies;
+        _movies = movies;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -60,8 +70,16 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _searchResults = results;
       });
-    } catch (e) {
-      // Handle error
+    } catch (e) {}
+  }
+
+  void _surpriseMe() {
+    if (_movies.isNotEmpty) {
+      final randomMovie = _movies[Random().nextInt(_movies.length)];
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => DetailsScreen(movie: randomMovie)),
+      );
     }
   }
 
@@ -76,37 +94,39 @@ class _HomeScreenState extends State<HomeScreen> {
           slivers: [
             SliverAppBar(
               floating: true,
-              expandedHeight: 140,
+              expandedHeight: 180,
               backgroundColor: Colors.transparent,
               elevation: 0,
               flexibleSpace: FlexibleSpaceBar(
                 background: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
                             'SearchFlix',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
+                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                           ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.language, color: Colors.white),
-                            onSelected: (value) {
-                              widget.onLocaleChange(Locale(value));
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(value: 'fa', child: Text('فارسی')),
-                              const PopupMenuItem(value: 'en', child: Text('English')),
-                              const PopupMenuItem(value: 'ar', child: Text('العربية')),
-                              const PopupMenuItem(value: 'es', child: Text('Español')),
-                              const PopupMenuItem(value: 'fr', child: Text('Français')),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.auto_awesome, color: Colors.amber),
+                                onPressed: _surpriseMe,
+                                tooltip: lang.surpriseMe,
+                              ),
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.language, color: Colors.white),
+                                onSelected: (v) => widget.onLocaleChange(Locale(v)),
+                                itemBuilder: (c) => [
+                                  const PopupMenuItem(value: 'fa', child: Text('فارسی')),
+                                  const PopupMenuItem(value: 'en', child: Text('English')),
+                                  const PopupMenuItem(value: 'ar', child: Text('العربية')),
+                                  const PopupMenuItem(value: 'es', child: Text('Español')),
+                                  const PopupMenuItem(value: 'fr', child: Text('Français')),
+                                ],
+                              ),
                             ],
                           ),
                         ],
@@ -127,6 +147,30 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 15),
+                      if (!_isSearching)
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _CategoryChip(
+                              label: lang.trending,
+                              isActive: _currentCategory == 'trending',
+                              onTap: () => _fetchMovies('trending'),
+                            ),
+                            _CategoryChip(
+                              label: 'Popular',
+                              isActive: _currentCategory == 'popular',
+                              onTap: () => _fetchMovies('popular'),
+                            ),
+                            _CategoryChip(
+                              label: 'Top Rated',
+                              isActive: _currentCategory == 'top_rated',
+                              onTap: () => _fetchMovies('top_rated'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -134,24 +178,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 15),
-                  child: Text(
-                    _isSearching ? lang.searchHint : lang.trending,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ),
-
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(20),
               sliver: _isLoading
-                  ? const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
-                    )
+                  ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
                   : SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
@@ -161,15 +190,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          final movie = _isSearching ? _searchResults[index] : _trendingMovies[index];
+                          final movie = _isSearching ? _searchResults[index] : _movies[index];
                           return MovieCard(
                             movie: movie,
                             onTap: () {
-                              // Details logic
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => DetailsScreen(movie: movie)),
+                              );
                             },
                           );
                         },
-                        childCount: _isSearching ? _searchResults.length : _trendingMovies.length,
+                        childCount: _isSearching ? _searchResults.length : _movies.length,
                       ),
                     ),
             ),
@@ -185,10 +217,44 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(icon: Icons.home, label: lang.trending, isActive: true),
-            _NavItem(icon: Icons.favorite_border, label: lang.watchlist),
-            _NavItem(icon: Icons.person_outline, label: lang.login),
+            _NavItem(icon: Icons.home, label: lang.trending, isActive: true, onTap: () {}),
+            _NavItem(icon: Icons.favorite_border, label: lang.watchlist, onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (c) => const WatchlistScreen()));
+            }),
+            _NavItem(icon: Icons.person_outline, label: lang.login, onTap: () {
+              // Login logic
+            }),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _CategoryChip({required this.label, required this.isActive, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFE50914) : Colors.white10,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.white70,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
@@ -199,24 +265,29 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
+  final VoidCallback onTap;
 
-  const _NavItem({required this.icon, required this.label, this.isActive = false});
+  const _NavItem({required this.icon, required this.label, this.isActive = false, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: isActive ? const Color(0xFFE50914) : Colors.white60),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: isActive ? const Color(0xFFE50914) : Colors.white60,
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: isActive ? const Color(0xFFE50914) : Colors.white60),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: isActive ? const Color(0xFFE50914) : Colors.white60,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

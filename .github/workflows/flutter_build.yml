@@ -11,6 +11,7 @@ jobs:
     name: Build for ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - platform: android
@@ -48,29 +49,36 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
         
-      - name: Build Platform Artifacts
+      - name: Build Android
+        if: matrix.platform == 'android'
+        run: flutter build apk --release
+
+      - name: Build Web
+        if: matrix.platform == 'web'
+        run: flutter build web --release --base-href="/SearchFlix.github.io/"
+
+      - name: Build macOS & Create DMG
+        if: matrix.platform == 'macos'
         run: |
-          if [ "${{ matrix.platform }}" = "android" ]; then
-            flutter build apk --release
-          elif [ "${{ matrix.platform }}" = "web" ]; then
-            flutter build web --release --base-href="/SearchFlix.github.io/"
-          elif [ "${{ matrix.platform }}" = "macos" ]; then
-            flutter build macos --release
-            # Create DMG
-            mkdir -p dmg_folder
-            cp -r build/macos/Build/Products/Release/searchflix.app dmg_folder/
-            hdiutil create -volname "SearchFlix" -srcfolder dmg_folder -ov -format UDZO SearchFlix-Mac.dmg
-          elif [ "${{ matrix.platform }}" = "windows" ]; then
-            flutter build windows --release
-            flutter pub run msix:create --version 1.0.0.0 --display-name "SearchFlix" --publisher "CN=SearchFlix"
-            # The msix package usually outputs to build/windows/runner/Release/searchflix.msix
-            # Or similar. We will find it and rename it.
-            mv build/windows/x64/runner/Release/*.msix SearchFlix-Windows-Installer.msix || true
-          elif [ "${{ matrix.platform }}" = "linux" ]; then
-            flutter build linux --release
-            # Just zip for linux for now
-            zip -r SearchFlix-Linux.zip build/linux/x64/release/bundle/*
-          fi
+          flutter build macos --release
+          mkdir -p dmg_folder
+          cp -r build/macos/Build/Products/Release/searchflix.app dmg_folder/
+          hdiutil create -volname "SearchFlix" -srcfolder dmg_folder -ov -format UDZO SearchFlix-Mac.dmg
+          
+      - name: Build Windows & Create MSIX
+        if: matrix.platform == 'windows'
+        run: |
+          flutter build windows --release
+          flutter pub run msix:create --display-name "SearchFlix" --publisher "CN=SearchFlix" --version 1.0.0.0
+          Get-ChildItem -Path build\windows\x64\runner\Release\*.msix | Copy-Item -Destination SearchFlix-Windows-Installer.msix
+        shell: pwsh
+
+      - name: Build Linux & Create ZIP
+        if: matrix.platform == 'linux'
+        run: |
+          flutter build linux --release
+          cd build/linux/x64/release/bundle
+          zip -r ../../../../SearchFlix-Linux.zip .
         shell: bash
 
       - name: Upload to Release
@@ -82,6 +90,7 @@ jobs:
             SearchFlix-Mac.dmg
             SearchFlix-Windows-Installer.msix
             SearchFlix-Linux.zip
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

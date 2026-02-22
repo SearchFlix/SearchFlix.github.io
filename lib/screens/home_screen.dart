@@ -53,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (category == 'top_rated') {
         movies = await _tmdbService.getTopRatedMovies();
       } else {
-        // Discovery mode with filters
         movies = await _tmdbService.discoverMovies(
           genreId: _filters['genreId'],
           minRating: _filters['minRating'],
@@ -133,37 +132,58 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  int _calculateCrossAxisCount(double width) {
-    if (width > 1200) return 6;
-    if (width > 900) return 4;
-    if (width > 600) return 3;
-    return 2;
-  }
-
   @override
   Widget build(BuildContext context) {
     final lang = Lang.of(context);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
-    final width = MediaQuery.of(context).size.width;
+    
+    // UI Layout Configuration based on width
+    final double screenWidth = MediaQuery.of(context).size.width;
+    
+    // PRO-GRADE RESPONSIVE LOGIC
+    int crossAxisCount;
+    double padding;
+    double spacing;
+    
+    if (screenWidth > 1400) {
+      crossAxisCount = 7;
+      padding = 60;
+      spacing = 30;
+    } else if (screenWidth > 1100) {
+      crossAxisCount = 5;
+      padding = 40;
+      spacing = 25;
+    } else if (screenWidth > 800) {
+      crossAxisCount = 4;
+      padding = 30;
+      spacing = 20;
+    } else if (screenWidth > 600) {
+      crossAxisCount = 3;
+      padding = 20;
+      spacing = 15;
+    } else {
+      crossAxisCount = 2;
+      padding = 16;
+      spacing = 12;
+    }
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF0F0F0F),
       body: Stack(
         children: [
-          Positioned.fill(child: Container(color: const Color(0xFF0F0F0F))),
-          
           SafeArea(
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverAppBar(
                   floating: true,
-                  expandedHeight: 200,
+                  expandedHeight: 180,
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   flexibleSpace: FlexibleSpaceBar(
                     background: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 10),
                       child: Column(
                         children: [
                           Row(
@@ -173,14 +193,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                 shaderCallback: (bounds) => const LinearGradient(
                                   colors: [Color(0xFFE50914), Color(0xFFFF5252)],
                                 ).createShader(bounds),
-                                child: const Text(
+                                child: Text(
                                   'SEARCHFLIX',
-                                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: Colors.white),
+                                  style: TextStyle(
+                                    fontSize: screenWidth > 600 ? 32 : 24, 
+                                    fontWeight: FontWeight.w900, 
+                                    letterSpacing: 2.0, 
+                                    color: Colors.white
+                                  ),
                                 ),
                               ),
                               if (_selectionMode)
                               ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE50914), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE50914), 
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)
+                                ),
                                 onPressed: _findSimilarBasedOnSelection,
                                 icon: const Icon(Icons.compare_arrows, size: 18),
                                 label: Text('Find Similar (${_selectedMovieIds.length})'),
@@ -188,7 +217,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               else
                               Row(
                                 children: [
-                                  IconButton(icon: const Icon(Icons.filter_list, color: Colors.white70), onPressed: _showFilters),
+                                  IconButton(
+                                    icon: const Icon(Icons.filter_list, color: Colors.white70), 
+                                    onPressed: _showFilters,
+                                    tooltip: 'Filters',
+                                  ),
                                   PopupMenuButton<String>(
                                     offset: const Offset(0, 50),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -205,31 +238,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           const SizedBox(height: 15),
-                          GlassBox(
-                            borderRadius: 30,
-                            opacity: 0.1,
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: _handleSearch,
-                              textAlign: isRtl ? TextAlign.right : TextAlign.left,
-                              decoration: InputDecoration(
-                                hintText: lang.searchHint,
-                                prefixIcon: const Icon(Icons.search, color: Color(0xFFE50914)),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 800), // Limit search bar width on large screens
+                            child: GlassBox(
+                              borderRadius: 30,
+                              opacity: 0.1,
+                              child: TextField(
+                                controller: _searchController,
+                                onChanged: _handleSearch,
+                                textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                                style: const TextStyle(fontSize: 16),
+                                decoration: InputDecoration(
+                                  hintText: lang.searchHint,
+                                  prefixIcon: const Icon(Icons.search, color: Color(0xFFE50914)),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                                ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 15),
-                          if (!_isSearching)
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _CategoryChip(label: lang.trending, isActive: _currentCategory == 'trending', onTap: () => _fetchMovies('trending')),
-                                _CategoryChip(label: 'Popular', isActive: _currentCategory == 'popular', onTap: () => _fetchMovies('popular')),
-                                _CategoryChip(label: 'Top Rated', isActive: _currentCategory == 'top_rated', onTap: () => _fetchMovies('top_rated')),
-                              ],
                             ),
                           ),
                         ],
@@ -239,15 +264,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: padding),
                   sliver: _isLoading
                       ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
                       : SliverGrid(
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: _calculateCrossAxisCount(width),
-                            childAspectRatio: 0.65,
-                            mainAxisSpacing: 25,
-                            crossAxisSpacing: 20,
+                            crossAxisCount: crossAxisCount,
+                            childAspectRatio: 0.68,
+                            mainAxisSpacing: spacing + 10,
+                            crossAxisSpacing: spacing,
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
@@ -266,7 +291,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   if (_selectionMode) {
                                     _toggleSelection(movie.id);
                                   } else {
-                                    Navigator.push(context, MaterialPageRoute(builder: (c) => DetailsScreen(movie: movie)));
+                                    Navigator.push(
+                                      context, 
+                                      PageRouteBuilder(
+                                        pageBuilder: (c, a, s) => FadeTransition(opacity: a, child: DetailsScreen(movie: movie)),
+                                        transitionDuration: const Duration(milliseconds: 300),
+                                      ),
+                                    );
                                   }
                                 },
                               );
@@ -275,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                 ),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                const SliverToBoxAdapter(child: SizedBox(height: 120)),
               ],
             ),
           ),
@@ -283,11 +314,11 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!_selectionMode)
           Positioned(
             bottom: 25,
-            left: 20,
-            right: 20,
+            left: screenWidth > 600 ? (screenWidth - 500) / 2 : 20,
+            right: screenWidth > 600 ? (screenWidth - 500) / 2 : 20,
             child: GlassBox(
               borderRadius: 35,
-              opacity: 0.15,
+              opacity: 0.2,
               blur: 20,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -347,7 +378,7 @@ class _NavItem extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: isActive ? const Color(0xFFE50914) : Colors.white54),
+          Icon(icon, color: isActive ? const Color(0xFFE50914) : Colors.white54, size: 28),
           const SizedBox(height: 4),
           Text(label, style: TextStyle(fontSize: 10, color: isActive ? const Color(0xFFE50914) : Colors.white54)),
         ],

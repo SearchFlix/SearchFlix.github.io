@@ -12,6 +12,10 @@ class Lang {
   final String surpriseMe;
   final String releaseDate;
   final String rating;
+  final String emptyWatchlist;
+  final String clearAll;
+  final String itemsCount;
+  final String exploreNow;
 
   Lang({
     required this.trending,
@@ -25,6 +29,10 @@ class Lang {
     required this.surpriseMe,
     required this.releaseDate,
     required this.rating,
+    required this.emptyWatchlist,
+    required this.clearAll,
+    required this.itemsCount,
+    required this.exploreNow,
   });
 
   static Map<String, Lang> _translations = {
@@ -40,6 +48,10 @@ class Lang {
       surpriseMe: 'غافلگیری!',
       releaseDate: 'تاریخ انتشار',
       rating: 'امتیاز',
+      emptyWatchlist: 'لیست تماشای شما خالی است',
+      clearAll: 'پاکسازی همه',
+      itemsCount: 'مورد',
+      exploreNow: 'همین حالا بگردیم!',
     ),
     'en': Lang(
       trending: 'Trending Now',
@@ -53,6 +65,10 @@ class Lang {
       surpriseMe: 'Surprise Me!',
       releaseDate: 'Release Date',
       rating: 'Rating',
+      emptyWatchlist: 'Your watchlist is empty',
+      clearAll: 'Clear All',
+      itemsCount: 'Items',
+      exploreNow: 'Let\'s Explore!',
     ),
     'ar': Lang(
       trending: 'الأكثر رواجاً',

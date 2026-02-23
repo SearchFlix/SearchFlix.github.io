@@ -122,14 +122,36 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Text('SEARCHFLIX', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, color: Color(0xFFE50914))),
                       const Spacer(),
                       IconButton(
+                        tooltip: lang.surpriseMe,
+                        icon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFFE50914)),
+                        onPressed: () async {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (c) => const Center(child: CircularProgressIndicator(color: Color(0xFFE50914))),
+                          );
+                          try {
+                            final movie = await _tmdbService.getRandomMovie();
+                            if (mounted) {
+                              Navigator.pop(context); // Close loading
+                              Navigator.push(context, MaterialPageRoute(builder: (c) => DetailsScreen(movie: movie)));
+                            }
+                          } catch (e) {
+                             if (mounted) Navigator.pop(context);
+                          }
+                        },
+                      ),
+                      IconButton(
+                        tooltip: lang.watchlist,
                         icon: const Icon(Icons.favorite_rounded, color: Colors.white70),
                         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const WatchlistScreen())),
                       ),
                       IconButton(
+                        tooltip: lang.language,
                         icon: const Icon(Icons.language, color: Colors.white70),
                         onPressed: () {
-                           // Quick toggle example
-                           widget.onLocaleChange(lang.currentLocale == 'fa' ? const Locale('en') : const Locale('fa'));
+                           final currentCode = Localizations.localeOf(context).languageCode;
+                           widget.onLocaleChange(currentCode == 'fa' ? const Locale('en') : const Locale('fa'));
                         },
                       ),
                     ],
@@ -159,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: _searchController,
                       onChanged: _handleSearch,
                       decoration: InputDecoration(
-                        hintText: 'Direct search by title...',
+                        hintText: lang.searchHint,
                         prefixIcon: const Icon(Icons.search, color: Color(0xFFE50914)),
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.05),

@@ -88,6 +88,31 @@ class TMDBService {
     }
   }
 
+  Future<Movie> getRandomMovie() async {
+    try {
+      // Pick a random page from the first 20 pages of popular movies
+      final randomPage = (DateTime.now().microsecondsSinceEpoch % 20) + 1;
+      final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/popular?api_key=${ApiConfig.tmdbApiKey}&page=$randomPage'));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List results = data['results'];
+        if (results.isEmpty) throw Exception('No movies found');
+        
+        final randomIndex = DateTime.now().microsecondsSinceEpoch % results.length;
+        return Movie.fromJson(results[randomIndex]);
+      } else {
+        throw Exception('Failed to fetch data from TMDB');
+      }
+    } catch (e) {
+      // Fallback: search for a common term and pick one
+      final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/top_rated?api_key=${ApiConfig.tmdbApiKey}&page=1'));
+      final data = json.decode(response.body);
+      final List results = data['results'];
+      return Movie.fromJson(results[0]);
+    }
+  }
+
   List<Movie> _handleResponse(http.Response response) {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);

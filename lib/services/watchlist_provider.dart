@@ -48,4 +48,11 @@ class WatchlistProvider with ChangeNotifier {
   bool isInWatchlist(int movieId) {
     return _watchlist.any((m) => m.id == movieId);
   }
+
+  Future<void> clearWatchlist() async {
+    _watchlist.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('watchlist');
+    notifyListeners();
+  }
 }

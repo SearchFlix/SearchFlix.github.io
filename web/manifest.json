@@ -1,13 +1,25 @@
 {
-    "name": "searchflix",
-    "short_name": "searchflix",
+    "name": "SearchFlix Premium",
+    "short_name": "SearchFlix",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0F0F0F",
+    "theme_color": "#E50914",
+    "description": "Premium Movie Discovery & AI Recommendatons",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "shortcuts": [
+        {
+            "name": "Search Movies",
+            "url": "/",
+            "description": "Search for your favorite movies"
+        },
+        {
+            "name": "Cinema AI Chat",
+            "url": "/#/chat",
+            "description": "Talk to the AI Assistant"
+        }
+    ],
     "icons": [
         {
             "src": "icons/Icon-192.png",

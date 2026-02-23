@@ -1,6 +1,7 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../models/movie.dart';
 import 'tmdb_service.dart';
 
 class AiService {
@@ -18,7 +19,7 @@ class AiService {
     await prefs.setString(_apiKeyToken, key);
   }
 
-  Future<List<Map<String, dynamic>>> getRecommendations(String query) async {
+  Future<List<Movie>> getRecommendations(String query) async {
     final apiKey = await getApiKey();
     if (apiKey == null || apiKey.isEmpty) {
       throw Exception('Gemini API Key missing. Please add it in Profile settings.');
@@ -47,7 +48,7 @@ class AiService {
       String cleanedText = text.replaceAll('```json', '').replaceAll('```', '').trim();
       List<dynamic> titles = json.decode(cleanedText);
       
-      List<Map<String, dynamic>> results = [];
+      List<Movie> results = [];
       for (var title in titles) {
         final movieResults = await _tmdbService.searchMovies(title.toString());
         if (movieResults.isNotEmpty) {

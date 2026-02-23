@@ -152,8 +152,7 @@ class _ChatScreenState extends State<ChatScreen> {
               scrollDirection: Axis.horizontal,
               itemCount: (msg['movies'] as List).length,
               itemBuilder: (context, idx) {
-                final movieMap = msg['movies'][idx];
-                final movie = Movie.fromJson(movieMap);
+                final movie = msg['movies'][idx] as Movie;
                 return SizedBox(
                   width: 150,
                   child: Padding(

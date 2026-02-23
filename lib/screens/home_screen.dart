@@ -11,6 +11,7 @@ import '../widgets/glass_box.dart';
 import '../services/notification_service.dart';
 import 'package:provider/provider.dart';
 import '../services/watchlist_provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -136,37 +137,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // MAIN CONTENT
           Expanded(
-            child: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  floating: true,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  automaticallyImplyLeading: false,
-                  title: Row(
-                    children: [
-                      const Text('SEARCHFLIX', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, color: Color(0xFFE50914))),
-                      const Spacer(),
-                      IconButton(
-                        tooltip: lang.surpriseMe,
-                        icon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFFE50914)),
-                        onPressed: () async {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (c) => const Center(child: CircularProgressIndicator(color: Color(0xFFE50914))),
-                          );
-                          try {
-                            final movie = await _tmdbService.getRandomMovie();
-                            if (mounted) {
-                              context.pop(); // Close loading
-                              context.push('/movie/${movie.id}', extra: movie);
+            child: RefreshIndicator(
+              color: const Color(0xFFE50914),
+              backgroundColor: const Color(0xFF1A1A1A),
+              onRefresh: _applyFilters,
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    floating: true,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    title: Row(
+                      children: [
+                        const Text('SEARCHFLIX', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, color: Color(0xFFE50914))),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: lang.surpriseMe,
+                          icon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFFE50914)),
+                          onPressed: () async {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (c) => const Center(child: CircularProgressIndicator(color: Color(0xFFE50914))),
+                            );
+                            try {
+                              final movie = await _tmdbService.getRandomMovie();
+                              if (mounted) {
+                                context.pop(); // Close loading
+                                context.push('/movie/${movie.id}', extra: movie);
+                              }
+                            } catch (e) {
+                               if (mounted) context.pop();
                             }
-                          } catch (e) {
-                             if (mounted) context.pop();
-                          }
-                        },
-                      ),
+                          },
+                        ),
+
                       IconButton(
                         tooltip: lang.watchlist,
                         icon: const Icon(Icons.favorite_rounded, color: Colors.white70),
@@ -227,7 +233,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: _isLoading
-                      ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+                      ? SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: isWide ? (width > 1400 ? 5 : 4) : 2,
+                            childAspectRatio: 0.68,
+                            mainAxisSpacing: 20,
+                            crossAxisSpacing: 20,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              return Shimmer.fromColors(
+                                baseColor: Colors.white.withOpacity(0.05),
+                                highlightColor: Colors.white.withOpacity(0.15),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                              );
+                            },
+                            childCount: 10,
+                          ),
+                        )
                       : SliverGrid(
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: isWide ? (width > 1400 ? 5 : 4) : 2,
@@ -250,9 +278,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 100)),
               ],
             ),
+            ),
           ),
         ],
       ),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/chat'),
         backgroundColor: const Color(0xFFE50914),

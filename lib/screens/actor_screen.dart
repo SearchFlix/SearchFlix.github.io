@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../widgets/movie_card.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ActorScreen extends StatefulWidget {
   final int actorId;
@@ -54,31 +55,40 @@ class _ActorScreenState extends State<ActorScreen> {
         elevation: 0,
         title: Text(widget.actorName, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : CustomScrollView(
+      body: CustomScrollView(
             slivers: [
+
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: width > 600 
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildProfileImage(),
-                          const SizedBox(width: 30),
-                          Expanded(child: _buildBiography()),
-                        ],
+                  child: _isLoading 
+                    ? Shimmer.fromColors(
+                        baseColor: Colors.white.withOpacity(0.05),
+                        highlightColor: Colors.white.withOpacity(0.15),
+                        child: Container(
+                           height: 300, 
+                           decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(20)),
+                        ),
                       )
-                    : Column(
-                        children: [
-                          _buildProfileImage(),
-                          const SizedBox(height: 25),
-                          _buildBiography(),
-                        ],
-                      ),
+                    : (width > 600 
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildProfileImage(),
+                            const SizedBox(width: 30),
+                            Expanded(child: _buildBiography()),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _buildProfileImage(),
+                            const SizedBox(height: 25),
+                            _buildBiography(),
+                          ],
+                        )),
                 ),
               ),
+
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -87,21 +97,38 @@ class _ActorScreenState extends State<ActorScreen> {
               ),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: width > 1200 ? 6 : (width > 800 ? 4 : 2),
-                    childAspectRatio: 0.68,
-                    mainAxisSpacing: 20,
-                    crossAxisSpacing: 20,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => MovieCard(
-                      movie: _movies[index],
-                      onTap: () => context.push('/movie/${_movies[index].id}', extra: _movies[index]),
+                sliver: _isLoading 
+                  ? SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: width > 1200 ? 6 : (width > 800 ? 4 : 2),
+                        childAspectRatio: 0.68,
+                        mainAxisSpacing: 20,
+                        crossAxisSpacing: 20,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => Shimmer.fromColors(
+                          baseColor: Colors.white.withOpacity(0.05),
+                          highlightColor: Colors.white.withOpacity(0.15),
+                          child: Container(decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(20))),
+                        ),
+                        childCount: 8,
+                      ),
+                    )
+                  : SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: width > 1200 ? 6 : (width > 800 ? 4 : 2),
+                        childAspectRatio: 0.68,
+                        mainAxisSpacing: 20,
+                        crossAxisSpacing: 20,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => MovieCard(
+                          movie: _movies[index],
+                          onTap: () => context.push('/movie/${_movies[index].id}', extra: _movies[index]),
+                        ),
+                        childCount: _movies.length,
+                      ),
                     ),
-                    childCount: _movies.length,
-                  ),
-                ),
               ),
             ],
           ),

@@ -191,15 +191,20 @@ class TMDBService {
   Future<Movie> getRandomMovie() async {
     try {
       final randomPage = (DateTime.now().microsecondsSinceEpoch % 20) + 1;
-      final response = await _getCached('${ApiConfig.tmdbBaseUrl}/movie/popular?api_key=${ApiConfig.tmdbApiKey}&page=$randomPage');
+      final isTV = DateTime.now().microsecondsSinceEpoch % 2 == 0;
+      final type = isTV ? 'tv' : 'movie';
+      
+      final response = await _getCached('${ApiConfig.tmdbBaseUrl}/$type/popular?api_key=${ApiConfig.tmdbApiKey}&page=$randomPage');
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List results = data['results'];
-        if (results.isEmpty) throw Exception('No movies found');
+        if (results.isEmpty) throw Exception('No content found');
         
         final randomIndex = DateTime.now().microsecondsSinceEpoch % results.length;
-        return Movie.fromJson(results[randomIndex]);
+        final movieData = results[randomIndex];
+        movieData['media_type'] = type;
+        return Movie.fromJson(movieData);
       } else {
         throw Exception('Failed to fetch data from TMDB');
       }
@@ -210,6 +215,7 @@ class TMDBService {
       return Movie.fromJson(results[0]);
     }
   }
+
 
   List<Movie> _handleResponse(http.Response response) {
     if (response.statusCode == 200) {

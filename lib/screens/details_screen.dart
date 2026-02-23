@@ -11,7 +11,9 @@ import '../services/searchflix_service.dart';
 import '../services/auth_service.dart';
 import '../services/localization_service.dart';
 import '../services/watchlist_provider.dart';
+import '../services/watchlist_provider.dart';
 import '../widgets/movie_card.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DetailsScreen extends StatefulWidget {
   final Movie movie;
@@ -179,6 +181,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       _Badge(label: widget.movie.releaseDate.split('-')[0], icon: Icons.calendar_today, color: Colors.white60),
                       if (_details != null)
                         ...(_details!['genres'] as List).take(3).map((g) => _Badge(label: g['name'], icon: Icons.movie_filter, color: Colors.white30)),
+                      if (_details != null && widget.movie.mediaType == 'tv' && _details!['number_of_seasons'] != null)
+                        _Badge(label: '${_details!['number_of_seasons']} Seasons', icon: Icons.tv, color: Colors.blueAccent),
+                      if (_details != null && widget.movie.mediaType == 'tv' && _details!['number_of_episodes'] != null)
+                        _Badge(label: '${_details!['number_of_episodes']} Eps', icon: Icons.list, color: Colors.white60),
                     ],
                   ),
                   const SizedBox(height: 25),
@@ -235,7 +241,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                   ),
                                   child: Center(
                                     child: Text(
-                                      lang.currentLocale == 'fa' ? 'لینکی برای این مورد یافت نشد' : 'No links found for this movie',
+                                      lang.currentLocale == 'fa' ? 'لینکی برای این مورد یافت نشد' : 'No links found for this title',
                                       style: const TextStyle(color: Colors.white54),
                                     ),
                                   ),
@@ -287,10 +293,36 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   SizedBox(
                     height: 160,
                     child: _isLoading 
-                      ? const Center(child: CircularProgressIndicator())
+                      ? ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: 6,
+                          itemBuilder: (context, index) => Container(
+                            width: 110,
+                            margin: const EdgeInsets.only(right: 15),
+                            child: Column(
+                              children: [
+                                Shimmer.fromColors(
+                                  baseColor: Colors.white.withOpacity(0.05),
+                                  highlightColor: Colors.white.withOpacity(0.15),
+                                  child: Container(
+                                    width: 90, height: 90,
+                                    decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Shimmer.fromColors(
+                                  baseColor: Colors.white.withOpacity(0.05),
+                                  highlightColor: Colors.white.withOpacity(0.15),
+                                  child: Container(width: 80, height: 10, color: Colors.black),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
                       : ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: (_details?['credits']['cast'] as List).take(12).length,
+
                           itemBuilder: (context, index) {
                             final actor = _details?['credits']['cast'][index];
                             return _ActorCard(
@@ -315,23 +347,40 @@ class _DetailsScreenState extends State<DetailsScreen> {
           
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: width > 1200 ? 6 : (width > 800 ? 4 : 3),
-                childAspectRatio: 0.65,
-                mainAxisSpacing: 20,
-                crossAxisSpacing: 20,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => MovieCard(
-                  movie: _similarMovies[index],
-                onTap: () {
-                  context.pushReplacement('/movie/${_similarMovies[index].id}', extra: _similarMovies[index]);
-                },
+            sliver: _isLoading 
+              ? SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: width > 1200 ? 6 : (width > 800 ? 4 : 3),
+                    childAspectRatio: 0.65,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 20,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Shimmer.fromColors(
+                      baseColor: Colors.white.withOpacity(0.05),
+                      highlightColor: Colors.white.withOpacity(0.15),
+                      child: Container(decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(20))),
+                    ),
+                    childCount: 6,
+                  ),
+                )
+              : SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: width > 1200 ? 6 : (width > 800 ? 4 : 3),
+                    childAspectRatio: 0.65,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 20,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => MovieCard(
+                      movie: _similarMovies[index],
+                    onTap: () {
+                      context.pushReplacement('/movie/${_similarMovies[index].id}', extra: _similarMovies[index]);
+                    },
+                    ),
+                    childCount: _similarMovies.length,
+                  ),
                 ),
-                childCount: _similarMovies.length,
-              ),
-            ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],

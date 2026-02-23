@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../services/localization_service.dart';
@@ -8,8 +9,8 @@ import 'details_screen.dart';
 import 'watchlist_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final Function(Locale) onLocaleChange;
-  const HomeScreen({super.key, required this.onLocaleChange});
+  final Function(Locale)? onLocaleChange;
+  const HomeScreen({super.key, this.onLocaleChange});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -133,27 +134,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           try {
                             final movie = await _tmdbService.getRandomMovie();
                             if (mounted) {
-                              Navigator.pop(context); // Close loading
-                              Navigator.push(context, MaterialPageRoute(builder: (c) => DetailsScreen(movie: movie)));
+                              context.pop(); // Close loading
+                              context.push('/movie/${movie.id}', extra: movie);
                             }
                           } catch (e) {
-                             if (mounted) Navigator.pop(context);
+                             if (mounted) context.pop();
                           }
                         },
                       ),
                       IconButton(
                         tooltip: lang.watchlist,
                         icon: const Icon(Icons.favorite_rounded, color: Colors.white70),
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const WatchlistScreen())),
+                        onPressed: () => context.push('/watchlist'),
                       ),
                       IconButton(
                         tooltip: lang.language,
                         icon: const Icon(Icons.language, color: Colors.white70),
                         onPressed: () {
+                           final currentCode = Localizations.localeOf(context).languageCode;
                            final supported = ['fa', 'en', 'ar', 'es', 'fr'];
-                           final current = Localizations.localeOf(context).languageCode;
-                           final nextIndex = (supported.indexOf(current) + 1) % supported.length;
-                           widget.onLocaleChange(Locale(supported[nextIndex]));
+                           final nextIndex = (supported.indexOf(currentCode) + 1) % supported.length;
+                           widget.onLocaleChange?.call(Locale(supported[nextIndex]));
                         },
                       ),
                     ],
@@ -207,10 +208,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
                               final movie = _isSearching ? _searchResults[index] : _movies[index];
-                              return MovieCard(
-                                movie: movie,
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => DetailsScreen(movie: movie))),
-                              );
+                                return MovieCard(
+                                  movie: movie,
+                                  onTap: () => context.push('/movie/${movie.id}', extra: movie),
+                                );
                             },
                             childCount: _isSearching ? _searchResults.length : _movies.length,
                           ),

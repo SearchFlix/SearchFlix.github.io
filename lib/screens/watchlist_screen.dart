@@ -107,7 +107,7 @@ class WatchlistScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: isWide ? (width > 1400 ? 5 : 4) : (width > 600 ? 3 : 2),
+                      crossAxisCount: isWide ? (width > 1400 ? 6 : 5) : (width > 700 ? 3 : 2),
                       childAspectRatio: 0.68,
                       mainAxisSpacing: 25,
                       crossAxisSpacing: 20,
@@ -117,12 +117,8 @@ class WatchlistScreen extends StatelessWidget {
                         return MovieCard(
                           movie: movies[index],
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DetailsScreen(movie: movies[index]),
-                              ),
-                            );
+                            // Using context.push for professional routing
+                            GoRouter.of(context).push('/movie/${movies[index].id}', extra: movies[index]);
                           },
                         );
                       },

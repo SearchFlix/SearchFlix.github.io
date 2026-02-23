@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,8 +35,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
   void _updateWebMeta() {
     if (kIsWeb) {
       html.document.title = "SearchFlix | ${widget.movie.title}";
-      // Update URL without reloading for better SEO feel
-      html.window.history.pushState(null, widget.movie.title, "#/movie/${widget.movie.id}");
     }
   }
 
@@ -218,15 +217,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
               delegate: SliverChildBuilderDelegate(
                 (context, index) => MovieCard(
                   movie: _similarMovies[index],
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (c, a, s) => DetailsScreen(movie: _similarMovies[index]),
-                        transitionDuration: Duration.zero,
-                      ),
-                    );
-                  },
+                onTap: () {
+                  context.pushReplacement('/movie/${_similarMovies[index].id}', extra: _similarMovies[index]);
+                },
                 ),
                 childCount: _similarMovies.length,
               ),

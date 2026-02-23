@@ -36,6 +36,16 @@ class Lang {
   });
 
   static Map<String, Lang> _translations = {
+    'fa': Lang(
+      trending: 'برترین‌های روز',
+      searchHint: 'جستجوی فیلم و سریال...',
+      movieDetails: 'جزئیات',
+      watchlist: 'لیست تماشا',
+      language: 'زبان',
+      login: 'ورود',
+      register: 'ثبت‌نام',
+      optional: 'اختیاری',
+      surpriseMe: 'پیشنهاد تصادفی',
       releaseDate: 'تاریخ انتشار',
       rating: 'امتیاز',
       emptyWatchlist: 'لیست تماشای شما خالی است',

@@ -6,8 +6,10 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'screens/home_screen.dart';
 import 'screens/details_screen.dart';
 import 'screens/watchlist_screen.dart';
+import 'screens/actor_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/watchlist_provider.dart';
+import 'services/auth_service.dart';
 import 'models/movie.dart';
 
 void main() {
@@ -17,6 +19,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => WatchlistProvider()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
       ],
       child: const SearchFlixApp(),
     ),
@@ -54,11 +57,35 @@ class _SearchFlixAppState extends State<SearchFlixApp> {
         path: '/movie/:id',
         builder: (context, state) {
           final movie = state.extra as Movie?;
-          // Fallback if extra is null (e.g. direct URL) - in a real app would fetch by ID
+          final testMode = state.uri.queryParameters['test'] == 'true';
+          
+          if (testMode) {
+            Provider.of<AuthService>(context, listen: false).toggleTestMode();
+          }
+
           if (movie == null) {
-            return const HomeScreen(onLocaleChange: null); // Simple fallback
+            return const HomeScreen(onLocaleChange: null);
           }
           return DetailsScreen(movie: movie);
+        },
+      ),
+      GoRoute(
+        path: '/secret-auth',
+        builder: (context, state) {
+          // Secretly login without UI mention
+          Future.microtask(() {
+            Provider.of<AuthService>(context, listen: false).login();
+            context.go('/');
+          });
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        },
+      ),
+      GoRoute(
+        path: '/actor/:id',
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          final name = state.uri.queryParameters['name'] ?? 'Actor';
+          return ActorScreen(actorId: id, actorName: name);
         },
       ),
     ],

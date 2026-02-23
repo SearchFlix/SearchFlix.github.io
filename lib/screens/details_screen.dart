@@ -7,6 +7,8 @@ import 'dart:html' as html;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
+import '../services/searchflix_service.dart';
+import '../services/auth_service.dart';
 import '../services/localization_service.dart';
 import '../services/watchlist_provider.dart';
 import '../widgets/movie_card.dart';
@@ -21,9 +23,11 @@ class DetailsScreen extends StatefulWidget {
 
 class _DetailsScreenState extends State<DetailsScreen> {
   final TMDBService _service = TMDBService();
+  final SearchFlixService _searchFlixService = SearchFlixService();
   Map<String, dynamic>? _details;
   List<Movie> _similarMovies = [];
   bool _isLoading = true;
+  bool _isFetchingLinks = false;
 
   @override
   void initState() {
@@ -40,17 +44,43 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
   Future<void> _loadData() async {
     try {
-      final details = await _service.getMovieDetails(widget.movie.id);
-      final similar = await _service.getSimilarMovies([widget.movie.id]);
+      final bool isTV = widget.movie.mediaType == 'tv';
+      final details = isTV 
+        ? await _service.getTVShowDetails(widget.movie.id)
+        : await _service.getMovieDetails(widget.movie.id);
+        
+      final similar = isTV
+        ? await _service.getSimilarTVShows(widget.movie.id)
+        : await _service.getSimilarMovies([widget.movie.id]);
+      
       if (mounted) {
         setState(() {
           _details = details;
-          _similarMovies = similar;
+          _similarMovies = similar.map((m) => Movie.fromJson({...m.toJson(), 'media_type': isTV ? 'tv' : 'movie'})).toList();
           _isLoading = false;
         });
       }
+      
+      _fetchDownloadLinks();
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchDownloadLinks() async {
+    if (widget.movie.sources != null && widget.movie.sources!.isNotEmpty) return;
+    
+    setState(() => _isFetchingLinks = true);
+    try {
+      final sources = await _searchFlixService.fetchDownloadLinks(widget.movie.title);
+      if (mounted) {
+        setState(() {
+          widget.movie.sources = sources;
+          _isFetchingLinks = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isFetchingLinks = false);
     }
   }
 
@@ -169,9 +199,58 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         ),
                         onPressed: _launchTrailer,
                         icon: const Icon(Icons.play_arrow, color: Colors.white),
-                        label: const Text('WATCH TRAILER', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white)),
-                      ),
-                    ),
+                                         const SizedBox(height: 20),
+
+                  // Hidden Download Section
+                  Consumer<AuthService>(
+                    builder: (context, auth, child) {
+                      if (!auth.isLoggedIn) return const SizedBox.shrink();
+                      
+                      final sources = widget.movie.sources;
+                      if (sources == null || sources.isEmpty) {
+                        return _isFetchingLinks 
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            )
+                          : const SizedBox.shrink();
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Divider(color: Colors.white10, height: 40),
+                          // Generic title to not draw too much attention or mention "Login"
+                          Text(
+                            lang.currentLocale == 'fa' ? 'نسخه‌های موجود' : 'Available Versions', 
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white70)
+                          ),
+                          const SizedBox(height: 15),
+                          ...sources.map((source) => Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.03),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: ListTile(
+                              leading: const Icon(Icons.download_rounded, color: Color(0xFFE50914)),
+                              title: Text(source.quality, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text(source.type, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                              trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+                              onPressed: () async {
+                                final url = Uri.parse(source.url);
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                                }
+                              },
+                            ),
+                          )),
+                        ],
+                      );
+                    },
+                  ),
+                  
                   const SizedBox(height: 20),
 
                   // External Links Section
@@ -220,6 +299,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           itemBuilder: (context, index) {
                             final actor = _details?['credits']['cast'][index];
                             return _ActorCard(
+                              id: actor['id'],
                               name: actor['name'],
                               character: actor['character'],
                               imageUrl: actor['profile_path'] != null 
@@ -293,31 +373,35 @@ class _Badge extends StatelessWidget {
 }
 
 class _ActorCard extends StatelessWidget {
+  final int id;
   final String name;
   final String character;
   final String imageUrl;
-  const _ActorCard({required this.name, required this.character, required this.imageUrl});
+  const _ActorCard({required this.id, required this.name, required this.character, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 110,
-      margin: const EdgeInsets.only(right: 15),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(55),
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              height: 90,
-              width: 90,
-              fit: BoxFit.cover,
+    return InkWell(
+      onTap: () => context.push('/actor/$id?name=${Uri.encodeComponent(name)}'),
+      child: Container(
+        width: 110,
+        margin: const EdgeInsets.only(right: 15),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(55),
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                height: 90,
+                width: 90,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          Text(character, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.white54)),
-        ],
+            const SizedBox(height: 10),
+            Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(character, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.white54)),
+          ],
+        ),
       ),
     );
   }

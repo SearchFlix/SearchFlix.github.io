@@ -88,6 +88,43 @@ class TMDBService {
     }
   }
 
+  Future<Map<String, dynamic>> getTVShowDetails(int tvId) async {
+    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/tv/$tvId?api_key=${ApiConfig.tmdbApiKey}&append_to_response=videos,credits,external_ids'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load TV show details');
+    }
+  }
+
+  Future<List<Movie>> getActorMovies(int actorId) async {
+    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/person/$actorId/combined_credits?api_key=${ApiConfig.tmdbApiKey}'));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List cast = data['cast'] ?? [];
+      return cast.map((m) => Movie.fromJson(m)).toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> getPersonDetails(int personId) async {
+    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/person/$personId?api_key=${ApiConfig.tmdbApiKey}'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception('Failed to load person details');
+  }
+
+  Future<List<Movie>> getSimilarTVShows(int tvId) async {
+    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/tv/$tvId/recommendations?api_key=${ApiConfig.tmdbApiKey}'));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List results = data['results'] ?? [];
+      return results.map((m) => Movie.fromJson(m)).toList();
+    }
+    return [];
+  }
+
   Future<Movie> getRandomMovie() async {
     try {
       // Pick a random page from the first 20 pages of popular movies

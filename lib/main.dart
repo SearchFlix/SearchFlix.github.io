@@ -7,6 +7,7 @@ import 'screens/home_screen.dart';
 import 'screens/details_screen.dart';
 import 'screens/watchlist_screen.dart';
 import 'screens/actor_screen.dart';
+import 'screens/profile_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/watchlist_provider.dart';
 import 'services/auth_service.dart';
@@ -90,6 +91,10 @@ class _SearchFlixAppState extends State<SearchFlixApp> {
           final name = state.uri.queryParameters['name'] ?? 'Actor';
           return ActorScreen(actorId: id, actorName: name);
         },
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
     ],
   );

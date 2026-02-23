@@ -101,10 +101,12 @@ class _HomeScreenState extends State<HomeScreen> {
               height: double.infinity,
               child: Padding(
                 padding: const EdgeInsets.only(left: 20, top: 20, bottom: 20),
-                child: FilterPanel(
-                  filters: _filters,
-                  onFilterChanged: (f) => setState(() => _filters = f),
-                  onApply: _applyFilters,
+                child: GlassBox(
+                  child: FilterPanel(
+                    filters: _filters,
+                    onFilterChanged: (f) => setState(() => _filters = f),
+                    onApply: _applyFilters,
+                  ),
                 ),
               ),
             ),
@@ -146,6 +148,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         tooltip: lang.watchlist,
                         icon: const Icon(Icons.favorite_rounded, color: Colors.white70),
                         onPressed: () => context.push('/watchlist'),
+                      ),
+                      IconButton(
+                        tooltip: 'Profile',
+                        icon: const Icon(Icons.account_circle, color: Colors.white70),
+                        onPressed: () => context.push('/profile'),
                       ),
                       IconButton(
                         tooltip: lang.language,

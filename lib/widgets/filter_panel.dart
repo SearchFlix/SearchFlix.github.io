@@ -60,10 +60,8 @@ class _FilterPanelState extends State<FilterPanel> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
       ),
       child: SingleChildScrollView(
         child: Column(

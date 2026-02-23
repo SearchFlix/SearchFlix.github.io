@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/tmdb_service.dart';
+import '../services/localization_service.dart';
 
 class FilterPanel extends StatefulWidget {
   final Map<String, dynamic> filters;

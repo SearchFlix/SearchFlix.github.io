@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/localization_service.dart';
 import '../services/analytics_service.dart';
+import '../services/ai_service.dart';
 import '../widgets/glass_box.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,12 +19,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _apiKeyController = TextEditingController();
+  final AiService _aiService = AiService();
   Map<String, dynamic>? _stats;
 
   @override
   void initState() {
     super.initState();
     _fetchStats();
+    _loadApiKey();
+  }
+
+  Future<void> _loadApiKey() async {
+    final key = await _aiService.getApiKey();
+    if (key != null) {
+      _apiKeyController.text = key;
+    }
   }
 
   Future<void> _fetchStats() async {
@@ -110,6 +122,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 10),
           Text('Last updated: ${_stats!['last_updated']}', style: const TextStyle(fontSize: 10, color: Colors.white24)),
         ],
+        const SizedBox(height: 30),
+        const Divider(color: Colors.white10),
+        const SizedBox(height: 15),
+        const Text('CINEMA AI SETTINGS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFE50914), letterSpacing: 1.5)),
+        const SizedBox(height: 15),
+        TextField(
+          controller: _apiKeyController,
+          obscureText: true,
+          decoration: _inputDecoration('Gemini API Key', Icons.vpn_key_outlined).copyWith(
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.save, color: Color(0xFFE50914)),
+              onPressed: () async {
+                await _aiService.saveApiKey(_apiKeyController.text);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('API Key saved successfully!')));
+                }
+              },
+            ),
+          ),
+          onChanged: (v) => _aiService.saveApiKey(v),
+        ),
+        const SizedBox(height: 10),
+        TextButton.icon(
+          onPressed: () async {
+            final url = Uri.parse('https://aistudio.google.com/app/apikey');
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url, mode: LaunchMode.externalApplication);
+            }
+          },
+          icon: const Icon(Icons.open_in_new, size: 14, color: Colors.blue),
+          label: const Text('Get Gemini API Key from Google AI Studio', style: TextStyle(fontSize: 12, color: Colors.blue)),
+        ),
         const SizedBox(height: 40),
         SizedBox(
           width: double.infinity,

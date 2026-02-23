@@ -70,7 +70,7 @@ class Movie {
     };
   }
 
-  String get posterUrl => posterPath.isNotEmpty ? 'https://image.tmdb.org/t/p/w500$posterPath' : 'https://via.placeholder.com/500x750?text=No+Poster';
-  String get backdropUrl => backdropPath.isNotEmpty ? 'https://image.tmdb.org/t/p/w1280$backdropPath' : posterUrl;
+  String get posterUrl => posterPath.isNotEmpty ? 'https://image.tmdb.org/t/p/w500$posterPath' : 'assets/images/poster_placeholder.png';
+  String get backdropUrl => backdropPath.isNotEmpty ? 'https://image.tmdb.org/t/p/w1280$backdropPath' : 'assets/images/backdrop_placeholder.png';
 }
 

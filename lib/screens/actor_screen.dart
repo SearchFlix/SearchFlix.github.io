@@ -111,14 +111,15 @@ class _ActorScreenState extends State<ActorScreen> {
   Widget _buildProfileImage() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
-      child: CachedNetworkImage(
-        imageUrl: _details?['profile_path'] != null 
-          ? 'https://image.tmdb.org/t/p/w400${_details?['profile_path']}' 
-          : 'https://via.placeholder.com/300x450?text=No+Photo',
-        width: 180,
-        height: 270,
-        fit: BoxFit.cover,
-      ),
+      child: _details?['profile_path'] != null 
+        ? CachedNetworkImage(
+            imageUrl: 'https://image.tmdb.org/t/p/w400${_details?['profile_path']}', 
+            width: 180,
+            height: 270,
+            fit: BoxFit.cover,
+            errorWidget: (context, url, error) => Image.asset('assets/images/profile_placeholder.png', width: 180, height: 270, fit: BoxFit.cover),
+          )
+        : Image.asset('assets/images/profile_placeholder.png', width: 180, height: 270, fit: BoxFit.cover),
     );
   }
 

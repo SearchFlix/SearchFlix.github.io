@@ -62,18 +62,18 @@ class MovieCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       child: Hero(
                         tag: 'poster-${movie.id}',
-                        child: CachedNetworkImage(
-                          imageUrl: (movie.posterPath != '') 
-                              ? movie.posterUrl 
-                              : 'https://via.placeholder.com/500x750?text=No+Image',
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Shimmer.fromColors(
-                            baseColor: Colors.grey[900]!,
-                            highlightColor: Colors.grey[800]!,
-                            child: Container(color: Colors.black),
-                          ),
-                          errorWidget: (context, url, error) => const Icon(Icons.error),
-                        ),
+                        child: (movie.posterPath != '') 
+                          ? CachedNetworkImage(
+                              imageUrl: movie.posterUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Shimmer.fromColors(
+                                baseColor: Colors.grey[900]!,
+                                highlightColor: Colors.grey[800]!,
+                                child: Container(color: Colors.black),
+                              ),
+                              errorWidget: (context, url, error) => Image.asset('assets/images/poster_placeholder.png', fit: BoxFit.cover),
+                            )
+                          : Image.asset('assets/images/poster_placeholder.png', fit: BoxFit.cover),
                       ),
                     ),
                   ),

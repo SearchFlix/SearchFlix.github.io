@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSearching = false;
   
   Map<String, dynamic> _filters = {
-    'genreId': null, 
+    'genreIds': null, 
     'minRating': 0.0, 
     'year': null, 
     'actors': [], 
@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       
       final movies = await _tmdbService.discoverMovies(
-        genreId: _filters['genreId'],
+        genreIds: _filters['genreIds'],
         minRating: (_filters['minRating'] as num).toDouble(),
         year: _filters['year'],
         castIds: castIds,
@@ -230,6 +230,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/chat'),
+        backgroundColor: const Color(0xFFE50914),
+        icon: const Icon(Icons.auto_awesome, color: Colors.white),
+        label: const Text('Cinema AI', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+        elevation: 10,
       ),
     );
   }

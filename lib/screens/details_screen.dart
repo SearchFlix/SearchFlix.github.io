@@ -116,10 +116,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CachedNetworkImage(
-                    imageUrl: (widget.movie.backdropPath != '') ? widget.movie.backdropUrl : widget.movie.posterUrl,
-                    fit: BoxFit.cover,
-                  ),
+                  (widget.movie.backdropPath != '') 
+                    ? CachedNetworkImage(
+                        imageUrl: widget.movie.backdropUrl,
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) => Image.asset('assets/images/backdrop_placeholder.png', fit: BoxFit.cover),
+                      )
+                    : Image.asset('assets/images/backdrop_placeholder.png', fit: BoxFit.cover),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -208,8 +211,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   // Download Section
                   Consumer<AuthService>(
                     builder: (context, auth, child) {
-                      // Note: We show the section even if not logged in, but with a message or just the title
-                      // To follow the user's request of showing download links, we ensure they are visible if they exist.
+                      // Only show for logged in users, and only for movies/tv (not that actors have sources, but good for safety)
+                      if (!auth.isLoggedIn) return const SizedBox.shrink();
+                      
                       final sources = widget.movie.sources;
                       
                       return Column(
@@ -436,12 +440,15 @@ class _ActorCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(55),
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                height: 90,
-                width: 90,
-                fit: BoxFit.cover,
-              ),
+              child: imageUrl.contains('placeholder') || imageUrl.isEmpty
+                ? Image.asset('assets/images/profile_placeholder.png', height: 90, width: 90, fit: BoxFit.cover)
+                : CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    height: 90,
+                    width: 90,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, url, error) => Image.asset('assets/images/profile_placeholder.png', height: 90, width: 90, fit: BoxFit.cover),
+                  ),
             ),
             const SizedBox(height: 10),
             Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),

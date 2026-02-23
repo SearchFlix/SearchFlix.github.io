@@ -38,7 +38,7 @@ class TMDBService {
 
   Future<List<Movie>> discoverMovies({
     int? year,
-    String? genreId,
+    String? genreIds,
     double? minRating,
     String? castIds,
     String? sortBy = 'popularity.desc',
@@ -46,7 +46,7 @@ class TMDBService {
   }) async {
     String url = '${ApiConfig.tmdbBaseUrl}/discover/movie?api_key=${ApiConfig.tmdbApiKey}&sort_by=$sortBy';
     if (year != null) url += '&primary_release_year=$year';
-    if (genreId != null) url += '&with_genres=$genreId';
+    if (genreIds != null && genreIds.isNotEmpty) url += '&with_genres=$genreIds';
     if (minRating != null) url += '&vote_average.gte=$minRating';
     if (castIds != null && castIds.isNotEmpty) url += '&with_cast=$castIds';
     if (language != null && language != 'all') url += '&with_original_language=$language';

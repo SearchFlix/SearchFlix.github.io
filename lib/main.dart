@@ -8,6 +8,7 @@ import 'screens/details_screen.dart';
 import 'screens/watchlist_screen.dart';
 import 'screens/actor_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/chat_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/watchlist_provider.dart';
 import 'services/auth_service.dart';
@@ -97,6 +98,10 @@ class _SearchFlixAppState extends State<SearchFlixApp> {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/chat',
+        builder: (context, state) => const ChatScreen(),
       ),
     ],
   );

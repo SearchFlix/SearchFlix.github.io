@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/tmdb_service.dart';
 import '../services/localization_service.dart';
+import 'glass_box.dart';
 
 class FilterPanel extends StatefulWidget {
   final Map<String, dynamic> filters;
@@ -68,8 +69,29 @@ class _FilterPanelState extends State<FilterPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('SEARCH FILTERS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFE50914), letterSpacing: 1.5)),
-            const SizedBox(height: 25),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('SEARCH FILTERS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFE50914), letterSpacing: 1.5)),
+                TextButton.icon(
+                  onPressed: () {
+                    final resetFilters = {
+                      'sortBy': 'popularity.desc',
+                      'year': null,
+                      'actors': [],
+                      'language': 'all',
+                      'genreIds': null,
+                      'minRating': 0.0,
+                    };
+                    widget.onFilterChanged(resetFilters);
+                    _actorController.clear();
+                  },
+                  icon: const Icon(Icons.refresh, size: 16, color: Colors.white54),
+                  label: const Text('Clear All', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
 
             // Sort By
             _sectionTitle('Sort By'),
@@ -148,11 +170,22 @@ class _FilterPanelState extends State<FilterPanel> {
               spacing: 8,
               runSpacing: 8,
               children: _genres.map((genre) {
-                final isSelected = widget.filters['genreId'] == genre['id'].toString();
+                final genreIdStr = genre['id'].toString();
+                final currentGenres = (widget.filters['genreIds'] as String?)?.split(',') ?? [];
+                final isSelected = currentGenres.contains(genreIdStr);
+                
                 return ChoiceChip(
                   label: Text(genre['name'], style: const TextStyle(fontSize: 12)),
                   selected: isSelected,
-                  onSelected: (val) => _updateFilter('genreId', val ? genre['id'].toString() : null),
+                  onSelected: (val) {
+                    List<String> updatedGenres = List.from(currentGenres);
+                    if (val) {
+                      if (!updatedGenres.contains(genreIdStr)) updatedGenres.add(genreIdStr);
+                    } else {
+                      updatedGenres.remove(genreIdStr);
+                    }
+                    _updateFilter('genreIds', updatedGenres.isEmpty ? null : updatedGenres.join(','));
+                  },
                   selectedColor: const Color(0xFFE50914),
                   backgroundColor: Colors.white12,
                 );
@@ -174,14 +207,20 @@ class _FilterPanelState extends State<FilterPanel> {
 
             SizedBox(
               width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE50914),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              height: 55,
+              child: GlassBox(
+                opacity: 0.2,
+                borderRadius: 15,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE50914).withOpacity(0.8),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    elevation: 0,
+                  ),
+                  onPressed: widget.onApply,
+                  child: Text(Lang.of(context).searchNow.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                 ),
-                onPressed: widget.onApply,
-                child: Text(Lang.of(context).searchNow.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white)),
               ),
             ),
           ],

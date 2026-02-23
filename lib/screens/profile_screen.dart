@@ -28,6 +28,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) setState(() => _stats = stats);
   }
 
+  bool _isLogin = true;
+  bool _isLoading = false;
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     
@@ -89,6 +92,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 20),
         Text(auth.user?['name'] ?? 'User', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         Text(auth.user?['email'] ?? '', style: const TextStyle(color: Colors.white70)),
+        const SizedBox(height: 30),
+        if (_stats != null) ...[
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 15),
+          const Text('SITE ANALYTICS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFE50914), letterSpacing: 1.5)),
+          const SizedBox(height: 15),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _statItem('Hits', _stats!['page_hits'].toString()),
+              _statItem('Visitors', _stats!['unique_visitors'].toString()),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text('Last updated: ${_stats!['last_updated']}', style: const TextStyle(fontSize: 10, color: Colors.white24)),
+        ],
         const SizedBox(height: 40),
         SizedBox(
           width: double.infinity,
@@ -102,6 +121,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('LOGOUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _statItem(String label, String value) {
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.white54)),
       ],
     );
   }

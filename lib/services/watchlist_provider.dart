@@ -45,12 +45,8 @@ class WatchlistProvider with ChangeNotifier {
         final List results = data['data'];
         final List<Movie> serverItems = results.map((r) => Movie.fromJson(json.decode(r['movie_data']))).toList();
         
-        // Merge with local items (prioritize server)
-        for (var item in serverItems) {
-          if (!_items.any((i) => i.id == item.id)) {
-            _items.add(item);
-          }
-        }
+        // Exact mirror from server
+        _items = serverItems;
         _saveToPrefs();
         notifyListeners();
       }
@@ -58,6 +54,7 @@ class WatchlistProvider with ChangeNotifier {
       print('Sync error: $e');
     }
   }
+
 
   Future<void> toggleWatchlist(Movie movie) async {
     final index = _items.indexWhere((item) => item.id == movie.id);
@@ -103,5 +100,27 @@ class WatchlistProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('watchlist');
     notifyListeners();
+
+    if (_authService?.user != null) {
+      try {
+        await http.post(
+          Uri.parse('$_baseUrl/watchlist.php'),
+          body: json.encode({
+            'user_id': _authService!.user!['id'],
+            'action': 'clear',
+          }),
+        );
+      } catch (e) {
+        print('Sync clear error: $e');
+    }
+  }
+
+  Future<void> clearLocalWatchlist() async {
+    _items.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('watchlist');
+    notifyListeners();
   }
 }
+
+

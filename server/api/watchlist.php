@@ -21,10 +21,15 @@ if (!empty($data->user_id)) {
         $stmt = $pdo->prepare("DELETE FROM watchlist WHERE user_id = ? AND movie_id = ?");
         $stmt->execute([$user_id, $data->movie_id]);
         echo json_encode(["status" => "success", "message" => "Removed from watchlist"]);
+    } elseif ($action == 'clear') {
+        $stmt = $pdo->prepare("DELETE FROM watchlist WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        echo json_encode(["status" => "success", "message" => "Watchlist cleared locally and completely from cloud"]);
     } else {
         echo json_encode(["status" => "error", "message" => "Invalid action or missing data"]);
     }
 } else {
+
     echo json_encode(["status" => "error", "message" => "User ID required"]);
 }
 ?>

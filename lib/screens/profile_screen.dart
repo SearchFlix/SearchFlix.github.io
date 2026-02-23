@@ -163,13 +163,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            onPressed: () => auth.logout(),
+            onPressed: () {
+              final watchlistProvider = Provider.of<WatchlistProvider>(context, listen: false);
+              watchlistProvider.clearLocalWatchlist();
+              auth.logout();
+            },
             child: const Text('LOGOUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ),
       ],
     );
   }
+
 
   Widget _statItem(String label, String value) {
     return Column(

@@ -80,7 +80,7 @@ class TMDBService {
   }
 
   Future<Map<String, dynamic>> getMovieDetails(int movieId) async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/$movieId?api_key=${ApiConfig.tmdbApiKey}&append_to_response=videos,credits'));
+    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/$movieId?api_key=${ApiConfig.tmdbApiKey}&append_to_response=videos,credits,external_ids'));
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {

@@ -47,9 +47,20 @@ class _FilterPanelState extends State<FilterPanel> {
     _loadGenres();
   }
 
+  @override
+  void didUpdateWidget(covariant FilterPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filters['mediaType'] != widget.filters['mediaType']) {
+      _loadGenres();
+    }
+  }
+
   Future<void> _loadGenres() async {
-    final genres = await _service.getGenres();
-    setState(() => _genres = genres);
+    final mediaType = widget.filters['mediaType'] ?? 'movie';
+    final genres = mediaType == 'tv' ? await _service.getTVGenres() : await _service.getGenres();
+    if (mounted) {
+      setState(() => _genres = genres);
+    }
   }
 
   void _updateFilter(String key, dynamic value) {
@@ -92,6 +103,38 @@ class _FilterPanelState extends State<FilterPanel> {
               ],
             ),
             const SizedBox(height: 15),
+
+            // Media Type
+            _sectionTitle('Type'),
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Center(child: Text('Movies')),
+                    selected: (widget.filters['mediaType'] ?? 'movie') == 'movie',
+                    onSelected: (val) {
+                      if (val) _updateFilter('mediaType', 'movie');
+                    },
+                    selectedColor: const Color(0xFFE50914),
+                    backgroundColor: Colors.white12,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Center(child: Text('TV Shows')),
+                    selected: widget.filters['mediaType'] == 'tv',
+                    onSelected: (val) {
+                      if (val) _updateFilter('mediaType', 'tv');
+                    },
+                    selectedColor: const Color(0xFFE50914),
+                    backgroundColor: Colors.white12,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
 
             // Sort By
             _sectionTitle('Sort By'),

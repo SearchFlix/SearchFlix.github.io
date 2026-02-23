@@ -1,34 +1,80 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/movie.dart';
 import '../config/api_config.dart';
 
 class TMDBService {
+  Future<http.Response> _getCached(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        prefs.setString('cache_$url', response.body);
+      }
+      return response;
+    } catch (e) {
+      final cachedBody = prefs.getString('cache_$url');
+      if (cachedBody != null) {
+        return http.Response(cachedBody, 200);
+      }
+      rethrow;
+    }
+  }
+
   Future<List<Movie>> getTrendingMovies() async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/trending/movie/day?api_key=${ApiConfig.tmdbApiKey}'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/trending/movie/day?api_key=${ApiConfig.tmdbApiKey}');
     return _handleResponse(response);
   }
 
   Future<List<Movie>> getPopularMovies() async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/popular?api_key=${ApiConfig.tmdbApiKey}'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/movie/popular?api_key=${ApiConfig.tmdbApiKey}');
     return _handleResponse(response);
   }
 
   Future<List<Movie>> getTopRatedMovies() async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/top_rated?api_key=${ApiConfig.tmdbApiKey}'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/movie/top_rated?api_key=${ApiConfig.tmdbApiKey}');
+    return _handleResponse(response);
+  }
+
+  Future<List<Movie>> getTrendingTVShows() async {
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/trending/tv/day?api_key=${ApiConfig.tmdbApiKey}');
+    return _handleResponse(response);
+  }
+
+  Future<List<Movie>> getPopularTVShows() async {
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/tv/popular?api_key=${ApiConfig.tmdbApiKey}');
+    return _handleResponse(response);
+  }
+
+  Future<List<Movie>> getTopRatedTVShows() async {
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/tv/top_rated?api_key=${ApiConfig.tmdbApiKey}');
     return _handleResponse(response);
   }
 
   Future<List<Movie>> searchMovies(String query) async {
     if (query.isEmpty) return [];
-    final response = await http.get(
-      Uri.parse('${ApiConfig.tmdbBaseUrl}/search/movie?api_key=${ApiConfig.tmdbApiKey}&query=${Uri.encodeComponent(query)}'),
-    );
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/search/movie?api_key=${ApiConfig.tmdbApiKey}&query=${Uri.encodeComponent(query)}');
+    return _handleResponse(response);
+  }
+
+  Future<List<Movie>> searchTVShows(String query) async {
+    if (query.isEmpty) return [];
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/search/tv?api_key=${ApiConfig.tmdbApiKey}&query=${Uri.encodeComponent(query)}');
     return _handleResponse(response);
   }
 
   Future<List<Map<String, dynamic>>> getGenres() async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/genre/movie/list?api_key=${ApiConfig.tmdbApiKey}'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/genre/movie/list?api_key=${ApiConfig.tmdbApiKey}');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return List<Map<String, dynamic>>.from(data['genres']);
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getTVGenres() async {
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/genre/tv/list?api_key=${ApiConfig.tmdbApiKey}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return List<Map<String, dynamic>>.from(data['genres']);
@@ -51,12 +97,29 @@ class TMDBService {
     if (castIds != null && castIds.isNotEmpty) url += '&with_cast=$castIds';
     if (language != null && language != 'all') url += '&with_original_language=$language';
 
-    final response = await http.get(Uri.parse(url));
+    final response = await _getCached(url);
+    return _handleResponse(response);
+  }
+
+  Future<List<Movie>> discoverTVShows({
+    int? year,
+    String? genreIds,
+    double? minRating,
+    String? sortBy = 'popularity.desc',
+    String? language,
+  }) async {
+    String url = '${ApiConfig.tmdbBaseUrl}/discover/tv?api_key=${ApiConfig.tmdbApiKey}&sort_by=$sortBy';
+    if (year != null) url += '&first_air_date_year=$year';
+    if (genreIds != null && genreIds.isNotEmpty) url += '&with_genres=$genreIds';
+    if (minRating != null) url += '&vote_average.gte=$minRating';
+    if (language != null && language != 'all') url += '&with_original_language=$language';
+
+    final response = await _getCached(url);
     return _handleResponse(response);
   }
 
   Future<List<Map<String, dynamic>>> searchActors(String query) async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/search/person?api_key=${ApiConfig.tmdbApiKey}&query=${Uri.encodeComponent(query)}'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/search/person?api_key=${ApiConfig.tmdbApiKey}&query=${Uri.encodeComponent(query)}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return List<Map<String, dynamic>>.from(data['results']);
@@ -68,7 +131,7 @@ class TMDBService {
     if (movieIds.isEmpty) return [];
     List<Movie> combinedResults = [];
     for (var id in movieIds.take(3)) {
-      final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/$id/recommendations?api_key=${ApiConfig.tmdbApiKey}'));
+      final response = await _getCached('${ApiConfig.tmdbBaseUrl}/movie/$id/recommendations?api_key=${ApiConfig.tmdbApiKey}');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List results = data['results'];
@@ -80,7 +143,7 @@ class TMDBService {
   }
 
   Future<Map<String, dynamic>> getMovieDetails(int movieId) async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/$movieId?api_key=${ApiConfig.tmdbApiKey}&append_to_response=videos,credits,external_ids'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/movie/$movieId?api_key=${ApiConfig.tmdbApiKey}&append_to_response=videos,credits,external_ids');
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
@@ -89,7 +152,7 @@ class TMDBService {
   }
 
   Future<Map<String, dynamic>> getTVShowDetails(int tvId) async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/tv/$tvId?api_key=${ApiConfig.tmdbApiKey}&append_to_response=videos,credits,external_ids'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/tv/$tvId?api_key=${ApiConfig.tmdbApiKey}&append_to_response=videos,credits,external_ids');
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
@@ -98,7 +161,7 @@ class TMDBService {
   }
 
   Future<List<Movie>> getActorMovies(int actorId) async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/person/$actorId/combined_credits?api_key=${ApiConfig.tmdbApiKey}'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/person/$actorId/combined_credits?api_key=${ApiConfig.tmdbApiKey}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List cast = data['cast'] ?? [];
@@ -108,7 +171,7 @@ class TMDBService {
   }
 
   Future<Map<String, dynamic>> getPersonDetails(int personId) async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/person/$personId?api_key=${ApiConfig.tmdbApiKey}'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/person/$personId?api_key=${ApiConfig.tmdbApiKey}');
     if (response.statusCode == 200) {
       return json.decode(response.body);
     }
@@ -116,7 +179,7 @@ class TMDBService {
   }
 
   Future<List<Movie>> getSimilarTVShows(int tvId) async {
-    final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/tv/$tvId/recommendations?api_key=${ApiConfig.tmdbApiKey}'));
+    final response = await _getCached('${ApiConfig.tmdbBaseUrl}/tv/$tvId/recommendations?api_key=${ApiConfig.tmdbApiKey}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List results = data['results'] ?? [];
@@ -127,9 +190,8 @@ class TMDBService {
 
   Future<Movie> getRandomMovie() async {
     try {
-      // Pick a random page from the first 20 pages of popular movies
       final randomPage = (DateTime.now().microsecondsSinceEpoch % 20) + 1;
-      final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/popular?api_key=${ApiConfig.tmdbApiKey}&page=$randomPage'));
+      final response = await _getCached('${ApiConfig.tmdbBaseUrl}/movie/popular?api_key=${ApiConfig.tmdbApiKey}&page=$randomPage');
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -142,8 +204,7 @@ class TMDBService {
         throw Exception('Failed to fetch data from TMDB');
       }
     } catch (e) {
-      // Fallback: search for a common term and pick one
-      final response = await http.get(Uri.parse('${ApiConfig.tmdbBaseUrl}/movie/top_rated?api_key=${ApiConfig.tmdbApiKey}&page=1'));
+      final response = await _getCached('${ApiConfig.tmdbBaseUrl}/movie/top_rated?api_key=${ApiConfig.tmdbApiKey}&page=1');
       final data = json.decode(response.body);
       final List results = data['results'];
       return Movie.fromJson(results[0]);

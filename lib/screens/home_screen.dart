@@ -8,6 +8,10 @@ import '../widgets/filter_panel.dart';
 import 'details_screen.dart';
 import 'watchlist_screen.dart';
 import '../widgets/glass_box.dart';
+import '../services/notification_service.dart';
+import 'package:provider/provider.dart';
+import '../services/watchlist_provider.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final Function(Locale)? onLocaleChange;
@@ -27,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSearching = false;
   
   Map<String, dynamic> _filters = {
+    'mediaType': 'movie',
     'genreIds': null, 
     'minRating': 0.0, 
     'year': null, 
@@ -39,6 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _applyFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final watchlist = Provider.of<WatchlistProvider>(context, listen: false);
+      NotificationService().init(context, watchlist);
+    });
   }
 
   Future<void> _applyFilters() async {
@@ -52,14 +61,25 @@ class _HomeScreenState extends State<HomeScreen> {
         castIds = (_filters['actors'] as List).map((a) => a['id'].toString()).join(',');
       }
       
-      final movies = await _tmdbService.discoverMovies(
-        genreIds: _filters['genreIds'],
-        minRating: (_filters['minRating'] as num).toDouble(),
-        year: _filters['year'],
-        castIds: castIds,
-        sortBy: _filters['sortBy'],
-        language: _filters['language'],
-      );
+      final mediaType = _filters['mediaType'] ?? 'movie';
+      
+      final movies = mediaType == 'tv' 
+        ? await _tmdbService.discoverTVShows(
+            genreIds: _filters['genreIds'],
+            minRating: (_filters['minRating'] as num).toDouble(),
+            year: _filters['year'],
+            sortBy: _filters['sortBy'],
+            language: _filters['language'],
+          )
+        : await _tmdbService.discoverMovies(
+            genreIds: _filters['genreIds'],
+            minRating: (_filters['minRating'] as num).toDouble(),
+            year: _filters['year'],
+            castIds: castIds,
+            sortBy: _filters['sortBy'],
+            language: _filters['language'],
+          );
+
       
       if (mounted) {
         setState(() {
@@ -79,10 +99,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     setState(() => _isSearching = true);
     try {
-      final results = await _tmdbService.searchMovies(query);
+      final mediaType = _filters['mediaType'] ?? 'movie';
+      final results = mediaType == 'tv' ? await _tmdbService.searchTVShows(query) : await _tmdbService.searchMovies(query);
       if (mounted) setState(() => _searchResults = results);
     } catch (e) {}
   }
+
 
   @override
   Widget build(BuildContext context) {

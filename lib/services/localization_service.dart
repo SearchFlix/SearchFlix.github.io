@@ -16,6 +16,7 @@ class Lang {
   final String clearAll;
   final String itemsCount;
   final String exploreNow;
+  final String searchNow;
 
   Lang({
     required this.trending,
@@ -33,6 +34,7 @@ class Lang {
     required this.clearAll,
     required this.itemsCount,
     required this.exploreNow,
+    required this.searchNow,
   });
 
   static Map<String, Lang> _translations = {
@@ -52,6 +54,7 @@ class Lang {
       clearAll: 'پاکسازی همه',
       itemsCount: 'مورد',
       exploreNow: 'همین حالا بگردیم!',
+      searchNow: 'جستجو',
     ),
     'en': Lang(
       trending: 'Trending Now',
@@ -69,6 +72,7 @@ class Lang {
       clearAll: 'Clear All',
       itemsCount: 'Items',
       exploreNow: 'Let\'s Explore!',
+      searchNow: 'Search Now',
     ),
     'ar': Lang(
       trending: 'الأكثر رواجاً',
@@ -86,6 +90,7 @@ class Lang {
       clearAll: 'مسح الكل',
       itemsCount: 'عناصر',
       exploreNow: 'دعنا نستكشف!',
+      searchNow: 'ابحث الآن',
     ),
     'es': Lang(
       trending: 'Tendencias',
@@ -103,6 +108,7 @@ class Lang {
       clearAll: 'Limpiar todo',
       itemsCount: 'Artículos',
       exploreNow: '¡Vamos a explorar!',
+      searchNow: 'Buscar ahora',
     ),
     'fr': Lang(
       trending: 'Tendances',
@@ -120,6 +126,7 @@ class Lang {
       clearAll: 'Tout effacer',
       itemsCount: 'Articles',
       exploreNow: 'Explorons!',
+      searchNow: 'Rechercher',
     ),
   };
 

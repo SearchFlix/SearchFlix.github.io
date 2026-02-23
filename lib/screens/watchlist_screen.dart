@@ -12,7 +12,7 @@ class WatchlistScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final lang = Lang.of(context);
     final watchlistProvider = Provider.of<WatchlistProvider>(context);
-    final movies = watchlistProvider.watchlist;
+    final movies = watchlistProvider.items;
     final width = MediaQuery.of(context).size.width;
     final isWide = width > 900;
 

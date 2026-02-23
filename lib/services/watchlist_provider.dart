@@ -1,48 +1,95 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/movie.dart';
+import 'auth_service.dart';
 
 class WatchlistProvider with ChangeNotifier {
-  List<Movie> _watchlist = [];
+  List<Movie> _items = [];
+  AuthService? _authService;
+  static const String _baseUrl = 'https://searchflix.github.io/server/api';
 
-  List<Movie> get watchlist => _watchlist;
+  List<Movie> get items => _items;
 
-  WatchlistProvider() {
-    loadWatchlist();
+  void update(AuthService authService) {
+    _authService = authService;
+    if (_authService?.isLoggedIn == true) {
+      _syncWithServer();
+    }
   }
 
-  Future<void> loadWatchlist() async {
+  WatchlistProvider() {
+    _loadFromPrefs();
+  }
+
+  Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? data = prefs.getString('watchlist');
-    if (data != null) {
-      final List decoded = json.decode(data);
-      _watchlist = decoded.map((m) => Movie.fromJson(m)).toList();
+    final String? watchlistData = prefs.getString('watchlist');
+    if (watchlistData != null) {
+      final List decoded = json.decode(watchlistData);
+      _items = decoded.map((item) => Movie.fromJson(item)).toList();
       notifyListeners();
     }
   }
 
-  Future<void> toggleWatchlist(Movie movie) async {
-    final index = _watchlist.indexWhere((m) => m.id == movie.id);
-    if (index >= 0) {
-      _watchlist.removeAt(index);
-    } else {
-      _watchlist.add(movie);
+  Future<void> _syncWithServer() async {
+    if (_authService?.user == null) return;
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/watchlist.php'),
+        body: json.encode({'user_id': _authService!.user!['id'], 'action': 'get'}),
+      );
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        final List results = data['data'];
+        final List<Movie> serverItems = results.map((r) => Movie.fromJson(json.decode(r['movie_data']))).toList();
+        
+        // Merge with local items (prioritize server)
+        for (var item in serverItems) {
+          if (!_items.any((i) => i.id == item.id)) {
+            _items.add(item);
+          }
+        }
+        _saveToPrefs();
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Sync error: $e');
     }
-    
-    final prefs = await SharedPreferences.getInstance();
-    final List encoded = _watchlist.map((m) => {
-      'id': m.id,
-      'title': m.title,
-      'overview': m.overview,
-      'poster_path': m.posterPath,
-      'backdrop_path': m.backdropPath,
-      'vote_average': m.voteAverage,
-      'release_date': m.releaseDate,
-    }).toList();
-    
-    await prefs.setString('watchlist', json.encode(encoded));
+  }
+
+  Future<void> toggleWatchlist(Movie movie) async {
+    final index = _items.indexWhere((item) => item.id == movie.id);
+    if (index >= 0) {
+      _items.removeAt(index);
+      if (_authService?.isLoggedIn == true && _authService?.user != null) {
+        _callApi('remove', movie);
+      }
+    } else {
+      _items.add(movie);
+      if (_authService?.isLoggedIn == true && _authService?.user != null) {
+        _callApi('add', movie);
+      }
+    }
+    _saveToPrefs();
     notifyListeners();
+  }
+
+  Future<void> _callApi(String action, Movie movie) async {
+    try {
+      await http.post(
+        Uri.parse('$_baseUrl/watchlist.php'),
+        body: json.encode({
+          'user_id': _authService!.user!['id'],
+          'action': action,
+          'movie_id': movie.id,
+          'movie_data': movie.toJson(),
+        }),
+      );
+    } catch (e) {
+      print('API call error: $e');
+    }
   }
 
   bool isInWatchlist(int movieId) {

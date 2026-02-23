@@ -370,6 +370,12 @@ class _DownloadItem extends StatelessWidget {
               ],
             ),
           ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE50914),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
             onPressed: () async {
               final url = Uri.parse(source.url);
               if (await canLaunchUrl(url)) {

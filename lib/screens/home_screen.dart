@@ -7,6 +7,7 @@ import '../widgets/movie_card.dart';
 import '../widgets/filter_panel.dart';
 import 'details_screen.dart';
 import 'watchlist_screen.dart';
+import '../widgets/glass_box.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(Locale)? onLocaleChange;

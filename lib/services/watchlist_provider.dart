@@ -76,28 +76,17 @@ class WatchlistProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _callApi(String action, Movie movie) async {
-    try {
-      await http.post(
-        Uri.parse('$_baseUrl/watchlist.php'),
-        body: json.encode({
-          'user_id': _authService!.user!['id'],
-          'action': action,
-          'movie_id': movie.id,
-          'movie_data': movie.toJson(),
-        }),
-      );
-    } catch (e) {
-      print('API call error: $e');
-    }
+  Future<void> _saveToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('watchlist', json.encode(_items.map((i) => i.toJson()).toList()));
   }
 
   bool isInWatchlist(int movieId) {
-    return _watchlist.any((m) => m.id == movieId);
+    return _items.any((m) => m.id == movieId);
   }
 
   Future<void> clearWatchlist() async {
-    _watchlist.clear();
+    _items.clear();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('watchlist');
     notifyListeners();

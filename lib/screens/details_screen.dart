@@ -158,21 +158,54 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  
-                  if (_details != null && _details!['videos']['results'].isNotEmpty)
-                  SizedBox(
-                    width: width > 600 ? 300 : double.infinity,
-                    height: 55,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE50914),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                   if (_details != null && _details!['videos']['results'].isNotEmpty)
+                    SizedBox(
+                      width: width > 600 ? 300 : double.infinity,
+                      height: 55,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE50914),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        ),
+                        onPressed: _launchTrailer,
+                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        label: const Text('WATCH TRAILER', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white)),
                       ),
-                      onPressed: _launchTrailer,
-                      icon: const Icon(Icons.play_arrow, color: Colors.white),
-                      label: const Text('WATCH TRAILER', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white)),
                     ),
-                  ),
+                  const SizedBox(height: 20),
+
+                  // External Links Section
+                  if (_details != null && _details!['external_ids'] != null)
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        if (_details!['external_ids']['imdb_id'] != null)
+                          _ExternalLinkBtn(
+                            label: 'IMDb',
+                            color: const Color(0xFFF5C518),
+                            textColor: Colors.black,
+                            icon: Icons.star,
+                            url: 'https://www.imdb.com/title/${_details!['external_ids']['imdb_id']}/',
+                          ),
+                        if (_details!['external_ids']['imdb_id'] != null)
+                          _ExternalLinkBtn(
+                            label: 'Letterboxd',
+                            color: const Color(0xFF202c33),
+                            textColor: const Color(0xFF00e054),
+                            icon: Icons.remove_red_eye_outlined,
+                            url: 'https://letterboxd.com/imdb/${_details!['external_ids']['imdb_id']}/',
+                          ),
+                        if (_details!['external_ids']['tvdb_id'] != null)
+                          _ExternalLinkBtn(
+                            label: 'TV Time',
+                            color: const Color(0xFFffd400),
+                            textColor: Colors.black,
+                            icon: Icons.tv,
+                            url: 'https://www.tvtime.com/en/show/${_details!['external_ids']['tvdb_id']}',
+                          ),
+                      ],
+                    ),
                   
                   const SizedBox(height: 40),
                   const Text('Top Cast', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),

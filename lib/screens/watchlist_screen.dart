@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../services/watchlist_provider.dart';
 import '../services/localization_service.dart';
 import '../widgets/movie_card.dart';

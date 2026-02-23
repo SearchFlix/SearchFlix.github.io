@@ -59,40 +59,22 @@ class _ActorScreenState extends State<ActorScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: CachedNetworkImage(
-                          imageUrl: _details?['profile_path'] != null 
-                            ? 'https://image.tmdb.org/t/p/w300${_details?['profile_path']}' 
-                            : 'https://via.placeholder.com/300x450?text=No+Photo',
-                          width: 150,
-                          height: 225,
-                          fit: BoxFit.cover,
-                        ),
+                  child: width > 600 
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildProfileImage(),
+                          const SizedBox(width: 30),
+                          Expanded(child: _buildBiography()),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          _buildProfileImage(),
+                          const SizedBox(height: 25),
+                          _buildBiography(),
+                        ],
                       ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Biography', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 10),
-                            Text(
-                              _details?['biography']?.isNotEmpty == true 
-                                ? _details!['biography'] 
-                                : 'No biography available for this actor.',
-                              maxLines: 8,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white70, height: 1.5),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
               const SliverToBoxAdapter(
@@ -102,10 +84,10 @@ class _ActorScreenState extends State<ActorScreen> {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: width > 1200 ? 6 : (width > 800 ? 4 : 2),
                     childAspectRatio: 0.68,
                     mainAxisSpacing: 20,
                     crossAxisSpacing: 20,
@@ -121,6 +103,47 @@ class _ActorScreenState extends State<ActorScreen> {
               ),
             ],
           ),
+    );
+  }
+
+  Widget _buildProfileImage() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: CachedNetworkImage(
+        imageUrl: _details?['profile_path'] != null 
+          ? 'https://image.tmdb.org/t/p/w400${_details?['profile_path']}' 
+          : 'https://via.placeholder.com/300x450?text=No+Photo',
+        width: 180,
+        height: 270,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  Widget _buildBiography() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _details?['name'] ?? widget.actorName, 
+          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 1.2)
+        ),
+        const SizedBox(height: 10),
+        if (_details?['birthday'] != null)
+          Text(
+            'Born: ${_details!['birthday']}${_details!['place_of_birth'] != null ? ' in ${_details!['place_of_birth']}' : ''}',
+            style: const TextStyle(color: Colors.white54, fontSize: 14),
+          ),
+        const SizedBox(height: 20),
+        const Text('Biography', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFE50914))),
+        const SizedBox(height: 10),
+        Text(
+          _details?['biography']?.isNotEmpty == true 
+            ? _details!['biography'] 
+            : 'No biography available for this actor.',
+          style: const TextStyle(color: Colors.white.withOpacity(0.8), height: 1.6, fontSize: 16),
+        ),
+      ],
     );
   }
 }

@@ -199,60 +199,51 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         ),
                         onPressed: _launchTrailer,
                         icon: const Icon(Icons.play_arrow, color: Colors.white),
-                                         const SizedBox(height: 20),
+                        label: Text(lang.currentLocale == 'fa' ? 'تماشای تریلر' : 'WATCH TRAILER', 
+                          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                      ),
+                    ),
+                  const SizedBox(height: 40),
 
-                  // Hidden Download Section
+                  // Download Section
                   Consumer<AuthService>(
                     builder: (context, auth, child) {
-                      if (!auth.isLoggedIn) return const SizedBox.shrink();
-                      
+                      // Note: We show the section even if not logged in, but with a message or just the title
+                      // To follow the user's request of showing download links, we ensure they are visible if they exist.
                       final sources = widget.movie.sources;
-                      if (sources == null || sources.isEmpty) {
-                        return _isFetchingLinks 
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                            )
-                          : const SizedBox.shrink();
-                      }
-
+                      
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Divider(color: Colors.white10, height: 40),
-                          // Generic title to not draw too much attention or mention "Login"
                           Text(
-                            lang.currentLocale == 'fa' ? 'نسخه‌های موجود' : 'Available Versions', 
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white70)
+                            lang.currentLocale == 'fa' ? 'لینک‌های دانلود' : 'DOWNLOAD LINKS', 
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFE50914), letterSpacing: 1.5)
                           ),
                           const SizedBox(height: 15),
-                          ...sources.map((source) => Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.03),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white10),
-                            ),
-                            child: ListTile(
-                              leading: const Icon(Icons.download_rounded, color: Color(0xFFE50914)),
-                              title: Text(source.quality, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text(source.type, style: const TextStyle(fontSize: 12, color: Colors.white54)),
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white30),
-                              onPressed: () async {
-                                final url = Uri.parse(source.url);
-                                if (await canLaunchUrl(url)) {
-                                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                                }
-                              },
-                            ),
-                          )),
+                          if (sources == null || sources.isEmpty)
+                            _isFetchingLinks 
+                              ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                              : Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      lang.currentLocale == 'fa' ? 'لینکی برای این مورد یافت نشد' : 'No links found for this movie',
+                                      style: const TextStyle(color: Colors.white54),
+                                    ),
+                                  ),
+                                )
+                          else
+                            ...sources.map((source) => _DownloadItem(source: source)),
                         ],
                       );
                     },
                   ),
-                  
-                  const SizedBox(height: 20),
 
+                  const SizedBox(height: 30),
                   // External Links Section
                   if (_details != null && _details!['external_ids'] != null)
                     Wrap(
@@ -285,18 +276,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           ),
                       ],
                     ),
-                  
-                  const SizedBox(height: 30),
-                  const Text('AVAILABLE VERSIONS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFE50914), letterSpacing: 1.5)),
-                  const SizedBox(height: 15),
-                  GlassBox(
-                    child: Padding(
-                      padding: const EdgeInsets.all(15),
-                      child: Column(
-                        children: widget.movie.sources!.map((source) => _DownloadItem(source: source)).toList(),
-                      ),
-                    ),
-                  ),
                   
                   const SizedBox(height: 40),
                   const Text('Top Cast', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
@@ -391,14 +370,13 @@ class _DownloadItem extends StatelessWidget {
               ],
             ),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE50914),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-            onPressed: () {}, // Redirect logic
-            child: const Text('FREE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            onPressed: () async {
+              final url = Uri.parse(source.url);
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Text(lang.currentLocale == 'fa' ? 'رایگان' : 'FREE', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
           ),
         ],
       ),

@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/localization_service.dart';
+import '../services/analytics_service.dart';
 import '../widgets/glass_box.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -16,8 +15,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
-  bool _isLogin = true;
-  bool _isLoading = false;
+  Map<String, dynamic>? _stats;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  Future<void> _fetchStats() async {
+    final stats = await AnalyticsService.getStats();
+    if (mounted) setState(() => _stats = stats);
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;

@@ -11,10 +11,12 @@ import 'screens/profile_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/watchlist_provider.dart';
 import 'services/auth_service.dart';
+import 'services/analytics_service.dart';
 import 'models/movie.dart';
 
 void main() {
-  // Use professional URLs (remove the #)
+  WidgetsFlutterBinding.ensureInitialized();
+  AnalyticsService.trackHit();
   usePathUrlStrategy();
   runApp(
     MultiProvider(

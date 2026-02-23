@@ -33,6 +33,16 @@ CREATE TABLE watchlist (
     PRIMARY KEY (user_id, movie_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE site_stats (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    page_hits INT DEFAULT 0,
+    unique_visitors INT DEFAULT 0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Initialize with one row
+INSERT INTO site_stats (page_hits, unique_visitors) VALUES (0, 0);
 */
 
 try {

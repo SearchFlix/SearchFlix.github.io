@@ -342,6 +342,7 @@ class _DownloadItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Lang.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -365,8 +366,8 @@ class _DownloadItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(source.info, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                Text(source.size, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Text(source.type, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(source.url.split('/').last, style: const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ),

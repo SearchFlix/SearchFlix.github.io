@@ -80,7 +80,7 @@ class _SearchFlixAppState extends State<SearchFlixApp> {
         builder: (context, state) {
           // Secretly login without UI mention
           Future.microtask(() {
-            Provider.of<AuthService>(context, listen: false).login();
+            Provider.of<AuthService>(context, listen: false).login('guest@example.com', 'guest123');
             context.go('/');
           });
           return const Scaffold(body: Center(child: CircularProgressIndicator()));

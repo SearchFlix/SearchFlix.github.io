@@ -45,6 +45,8 @@ class _ActorScreenState extends State<ActorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F0F),
       appBar: AppBar(
@@ -141,7 +143,7 @@ class _ActorScreenState extends State<ActorScreen> {
           _details?['biography']?.isNotEmpty == true 
             ? _details!['biography'] 
             : 'No biography available for this actor.',
-          style: const TextStyle(color: Colors.white.withOpacity(0.8), height: 1.6, fontSize: 16),
+          style: TextStyle(color: Colors.white.withOpacity(0.8), height: 1.6, fontSize: 16),
         ),
       ],
     );

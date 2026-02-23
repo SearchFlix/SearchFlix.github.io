@@ -63,14 +63,8 @@ class WatchlistProvider with ChangeNotifier {
     final index = _items.indexWhere((item) => item.id == movie.id);
     if (index >= 0) {
       _items.removeAt(index);
-      if (_authService?.isLoggedIn == true && _authService?.user != null) {
-        _callApi('remove', movie);
-      }
     } else {
       _items.add(movie);
-      if (_authService?.isLoggedIn == true && _authService?.user != null) {
-        _callApi('add', movie);
-      }
     }
     _saveToPrefs();
     notifyListeners();

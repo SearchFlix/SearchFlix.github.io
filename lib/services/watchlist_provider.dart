@@ -61,13 +61,32 @@ class WatchlistProvider with ChangeNotifier {
 
   Future<void> toggleWatchlist(Movie movie) async {
     final index = _items.indexWhere((item) => item.id == movie.id);
+    String action;
     if (index >= 0) {
       _items.removeAt(index);
+      action = 'remove';
     } else {
       _items.add(movie);
+      action = 'add';
     }
     _saveToPrefs();
     notifyListeners();
+
+    if (_authService?.user != null) {
+      try {
+        await http.post(
+          Uri.parse('$_baseUrl/watchlist.php'),
+          body: json.encode({
+            'user_id': _authService!.user!['id'],
+            'action': action,
+            'movie_id': movie.id,
+            if (action == 'add') 'movie_data': movie.toJson(),
+          }),
+        );
+      } catch (e) {
+        print('Sync toggle error: $e');
+      }
+    }
   }
 
   Future<void> _saveToPrefs() async {

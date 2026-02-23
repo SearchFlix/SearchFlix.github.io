@@ -29,17 +29,31 @@ class SearchFlixService {
         }
         
         if (results != null && results.isNotEmpty) {
-          // Find closest match by title
+          // Robust matching: Check title, original_title, and title_en if they exist
           final bestMatch = results.firstWhere(
-            (m) => m['title']?.toString().toLowerCase() == movieTitle.toLowerCase(),
+            (m) {
+              final String searchTitle = movieTitle.toLowerCase();
+              final String? mTitle = m['title']?.toString().toLowerCase();
+              final String? mOrigTitle = m['original_title']?.toString().toLowerCase();
+              final String? mTitleEn = m['title_en']?.toString().toLowerCase();
+              
+              return mTitle == searchTitle || mOrigTitle == searchTitle || mTitleEn == searchTitle;
+            },
             orElse: () => results!.first,
           );
           
           if (bestMatch['sources'] != null) {
             final List sourcesList = bestMatch['sources'];
+            print('Found ${sourcesList.length} sources for match: ${bestMatch['title']}');
             return sourcesList.map((s) => DownloadSource.fromJson(s)).toList();
+          } else {
+            print('No sources found in best match: ${bestMatch['title']}');
           }
+        } else {
+          print('No results found for query: $movieTitle');
         }
+      } else {
+        print('API Error: ${response.statusCode} - ${response.body}');
       }
       return [];
     } catch (e) {

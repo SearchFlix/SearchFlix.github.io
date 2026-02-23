@@ -18,8 +18,11 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => WatchlistProvider()),
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProxyProvider<AuthService, WatchlistProvider>(
+          create: (_) => WatchlistProvider(),
+          update: (_, auth, watchlist) => watchlist!..update(auth),
+        ),
       ],
       child: const SearchFlixApp(),
     ),

@@ -150,8 +150,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         tooltip: lang.language,
                         icon: const Icon(Icons.language, color: Colors.white70),
                         onPressed: () {
-                           final currentCode = Localizations.localeOf(context).languageCode;
-                           widget.onLocaleChange(currentCode == 'fa' ? const Locale('en') : const Locale('fa'));
+                           final supported = ['fa', 'en', 'ar', 'es', 'fr'];
+                           final current = Localizations.localeOf(context).languageCode;
+                           final nextIndex = (supported.indexOf(current) + 1) % supported.length;
+                           widget.onLocaleChange(Locale(supported[nextIndex]));
                         },
                       ),
                     ],

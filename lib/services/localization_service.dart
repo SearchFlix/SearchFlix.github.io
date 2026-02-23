@@ -36,16 +36,6 @@ class Lang {
   });
 
   static Map<String, Lang> _translations = {
-    'fa': Lang(
-      trending: 'داغ‌ترین‌ها',
-      searchHint: 'جستجوی فیلم...',
-      movieDetails: 'جزئیات فیلم',
-      watchlist: 'لیست تماشا',
-      language: 'زبان',
-      login: 'ورود',
-      register: 'ثبت نام',
-      optional: 'اختیاری',
-      surpriseMe: 'غافلگیری!',
       releaseDate: 'تاریخ انتشار',
       rating: 'امتیاز',
       emptyWatchlist: 'لیست تماشای شما خالی است',
@@ -82,6 +72,10 @@ class Lang {
       surpriseMe: 'فاجئني!',
       releaseDate: 'تاريخ الإصدار',
       rating: 'التقييم',
+      emptyWatchlist: 'قائمة المشاهدة فارغة',
+      clearAll: 'مسح الكل',
+      itemsCount: 'عناصر',
+      exploreNow: 'دعنا نستكشف!',
     ),
     'es': Lang(
       trending: 'Tendencias',
@@ -95,6 +89,10 @@ class Lang {
       surpriseMe: '¡Sorpréndeme!',
       releaseDate: 'Fecha de lanzamiento',
       rating: 'Calificación',
+      emptyWatchlist: 'Tu lista está vacía',
+      clearAll: 'Limpiar todo',
+      itemsCount: 'Artículos',
+      exploreNow: '¡Vamos a explorar!',
     ),
     'fr': Lang(
       trending: 'Tendances',
@@ -108,6 +106,10 @@ class Lang {
       surpriseMe: 'Surprends-moi !',
       releaseDate: 'Date de sortie',
       rating: 'Note',
+      emptyWatchlist: 'Votre liste est vide',
+      clearAll: 'Tout effacer',
+      itemsCount: 'Articles',
+      exploreNow: 'Explorons!',
     ),
   };
 

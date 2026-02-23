@@ -182,7 +182,7 @@ class _FilterPanelState extends State<FilterPanel> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 ),
                 onPressed: widget.onApply,
-                child: const Text('SEARCH NOW', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                child: const Text('SEARCH NOW', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white)),
               ),
             ),
           ],

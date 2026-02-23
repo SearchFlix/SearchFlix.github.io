@@ -286,6 +286,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       ],
                     ),
                   
+                  const SizedBox(height: 30),
+                  const Text('AVAILABLE VERSIONS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFE50914), letterSpacing: 1.5)),
+                  const SizedBox(height: 15),
+                  GlassBox(
+                    child: Padding(
+                      padding: const EdgeInsets.all(15),
+                      child: Column(
+                        children: widget.movie.sources!.map((source) => _DownloadItem(source: source)).toList(),
+                      ),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 40),
                   const Text('Top Cast', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 15),
@@ -339,6 +351,55 @@ class _DetailsScreenState extends State<DetailsScreen> {
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DownloadItem extends StatelessWidget {
+  final DownloadSource source;
+  const _DownloadItem({required this.source});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE50914).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE50914).withOpacity(0.5)),
+            ),
+            child: Text(source.quality, style: const TextStyle(color: Color(0xFFE50914), fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(source.info, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(source.size, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE50914),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+            onPressed: () {}, // Redirect logic
+            child: const Text('FREE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
         ],
       ),
     );
